@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MechVerse — Unit</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<div class="bg-fx" aria-hidden="true">
+  <span class="bg-blob bg-blob-1"></span>
+  <span class="bg-blob bg-blob-2"></span>
+  <span class="bg-blob bg-blob-3"></span>
+  <span class="bg-icon bg-icon-1">⚙️</span>
+  <span class="bg-icon bg-icon-2">📐</span>
+  <span class="bg-icon bg-icon-3">🔧</span>
+  <span class="bg-icon bg-icon-4">🛠️</span>
+</div>
+<div id="topbar-root"></div>
+<div class="container">
+  <div id="breadcrumbRoot" class="breadcrumb"></div>
+  <a href="#" id="backLink" class="muted" style="text-decoration:none;">← Back to subject</a>
+  <div id="errorBox" class="alert alert-error hidden"></div>
+  <div class="card bracket" style="margin:16px 0 24px;">
+    <h2 id="unitTitle"></h2>
+  </div>
+
+  <div id="sections"></div>
+</div>
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/theme.js"></script>
+<script src="js/ui-helpers.js"></script>
+<script src="js/nav.js"></script>
+<script src="js/back-to-top.js"></script>
+<script>
+const DOWNLOAD_SVG = `<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v11"/><path d="M6.5 9.5L12 15l5.5-5.5"/><path d="M4.5 20h15"/></svg>`;
+const STAR_SVG = `<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5l3.09 6.26 6.91 1-5 4.87 1.18 6.88L12 18.27l-6.18 3.24L7 14.63l-5-4.87 6.91-1z"/></svg>`;
+const VIDEO_SVG = `<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="14" rx="3"/><path d="M9 22h6"/><path d="M12 18v4"/><path d="M10.5 9.2v5.6a.5.5 0 0 0 .76.43l4.5-2.8a.5.5 0 0 0 0-.86l-4.5-2.8a.5.5 0 0 0-.76.43z" fill="currentColor" stroke="none"/></svg>`;
+const TYPE_META = {
+  note: { icon: '📄', label: 'Notes' },
+  video: { icon: '📺', label: 'Recommended Videos' },
+  pyq: { icon: '📚', label: 'Previous Year Questions' },
+  practice: { icon: '📝', label: 'Practice Questions' },
+  book: { icon: '📖', label: 'Reference Books' },
+  important_topic: { icon: '⭐', label: 'Important Topics' },
+};
+
+(async () => {
+  const user = await requireSession();
+  if (!user) return;
+  renderNav('resource', user);
+
+  const unitId = getPageId('mv_unitId');
+  if (!unitId) {
+    showError(document.getElementById('errorBox'), 'No unit was specified in the URL. Go back to the subject page and click a unit again.');
+    return;
+  }
+
+  let unit, resources;
+  try {
+    ({ unit, resources } = await api(`/resource-hub/units/${unitId}`));
+  } catch (err) {
+    showError(document.getElementById('errorBox'), `Couldn't load this unit (id ${unitId}): ${err.message}. Go back and click the unit again instead of using a stale link.`);
+    return;
+  }
+  document.getElementById('unitTitle').textContent = unit.title;
+  renderBreadcrumbs('breadcrumbRoot', [
+    { label: 'Resource Hub', href: 'dashboard.html' },
+    { label: unit.subject_name, href: `subject.html?mv_subjectId=${unit.subject_id}` },
+    { label: unit.title },
+  ]);
+  document.getElementById('backLink').addEventListener('click', (e) => {
+    e.preventDefault();
+    goToPage('subject.html', 'mv_subjectId', unit.subject_id);
+  });
+
+  const sectionsEl = document.getElementById('sections');
+  const order = ['note', 'video', 'pyq', 'practice', 'important_topic', 'book'];
+  sectionsEl.innerHTML = order.filter(t => resources[t]?.length).map(type => `
+    <div class="resource-section-header">
+      <span class="resource-section-icon">${TYPE_META[type].icon}</span>
+      <h3>${TYPE_META[type].label}</h3>
+    </div>
+    <div>${resources[type].map((r, i) => resourceRow(r, i)).join('')}</div>
+  `).join('') || `<div class="empty-state">No resources uploaded for this unit yet.</div>`;
+
+  document.querySelectorAll('[data-progress]').forEach(btn => btn.onclick = async (e) => {
+    const id = btn.dataset.progress;
+    const { completed } = await api(`/resource-hub/resources/${id}/progress`, { method: 'POST' });
+    btn.textContent = completed ? '☑' : '☐';
+    btn.classList.toggle('active', completed);
+    btn.classList.add('pop');
+    setTimeout(() => btn.classList.remove('pop'), 350);
+  });
+    document.querySelectorAll('.action-download').forEach(link => link.addEventListener('click', () => {
+    showToast('Opening resource…', 'default');
+  }));
+
+  document.querySelectorAll('[data-bookmark]').forEach(btn => btn.onclick = async () => {
+    const id = btn.dataset.bookmark;
+    try {
+      const { bookmarked } = await api(`/resource-hub/resources/${id}/bookmark`, { method: 'POST' });
+      btn.classList.toggle('active', bookmarked);
+      btn.classList.add(bookmarked ? 'spin-pop' : 'pop');
+      setTimeout(() => btn.classList.remove('pop', 'spin-pop'), 450);
+      showToast(bookmarked ? 'Bookmark saved' : 'Bookmark removed', 'success');
+    } catch (err) {
+      showToast(`Couldn't save bookmark: ${err.message}`, 'error');
+    }
+  });
+})();
+
+function youtubeId(url) {
+  if (!url) return null;
+  const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([A-Za-z0-9_-]{6,})/);
+  return m ? m[1] : null;
+}
+
+function resourceRow(r, index) {
+  const ytId = r.type === 'video' ? youtubeId(r.url) : null;
+
+  if (ytId) {
+    return `<div class="resource-row reveal-init" style="align-items:center; --reveal-delay:${index * 60}ms;">
+      <div class="left" style="align-items:center;">
+        <button class="icon-btn ${r.completed ? 'active' : ''}" data-progress="${r.id}">${r.completed ? '☑' : '☐'}</button>
+        <a href="${r.url}" target="_blank" rel="noopener" style="position:relative; display:block; width:100px; flex:none;">
+          <img src="https://img.youtube.com/vi/${ytId}/mqdefault.jpg" alt="${r.title}" style="width:100px; height:56px; object-fit:cover; border-radius:6px; border:1px solid var(--border); display:block;" />
+          <span style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:22px; color:#fff; text-shadow:0 1px 4px rgba(0,0,0,0.6);">▶</span>
+        </a>
+        <div><strong>${r.title}</strong><div class="meta">Opens on YouTube</div></div>
+      </div>
+      <div class="resource-actions">
+        <span class="action-wrap">
+          <a class="icon-btn action-video" href="${r.url}" target="_blank" rel="noopener">${VIDEO_SVG}</a>
+          <span class="action-tooltip">Watch</span>
+        </span>
+        <span class="action-wrap">
+          <button class="icon-btn action-bookmark ${r.bookmarked ? 'active' : ''}" data-bookmark="${r.id}">${STAR_SVG}</button>
+          <span class="action-tooltip">Bookmark</span>
+        </span>
+      </div>
+    </div>`;
+  }
+
+  return `<div class="resource-row reveal-init" style="--reveal-delay:${index * 60}ms;">
+    <div class="left">
+      <button class="icon-btn ${r.completed ? 'active' : ''}" data-progress="${r.id}">${r.completed ? '☑' : '☐'}</button>
+      <div>
+        ${r.url ? `<a href="${resolveFileUrl(r.url)}" target="_blank" rel="noopener" style="color:inherit; text-decoration:none;"><strong style="text-decoration:underline; text-decoration-color:var(--border);">${r.title}</strong></a>` : `<strong>${r.title}</strong>`}
+        <div class="meta">${r.year || (r.difficulty ? r.difficulty.replace('_',' ') : '')}</div>
+      </div>
+    </div>
+    <div class="resource-actions">
+      ${r.url && r.type === 'video' ? `<span class="action-wrap">
+        <a class="icon-btn action-video" href="${r.url}" target="_blank" rel="noopener">${VIDEO_SVG}</a>
+        <span class="action-tooltip">Watch</span>
+      </span>` : ''}
+      ${r.url && r.type !== 'video' ? `<span class="action-wrap">
+        <a class="icon-btn action-download" href="${resolveFileUrl(r.url)}" target="_blank" rel="noopener">${DOWNLOAD_SVG}</a>
+        <span class="action-tooltip">Download</span>
+      </span>` : ''}
+      <span class="action-wrap">
+        <button class="icon-btn action-bookmark ${r.bookmarked ? 'active' : ''}" data-bookmark="${r.id}">${STAR_SVG}</button>
+        <span class="action-tooltip">Bookmark</span>
+      </span>
+    </div>
+  </div>`;
+}
+</script>
+</body>
+</html>

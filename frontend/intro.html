@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MechVerse</title>
+<link rel="stylesheet" href="css/style.css" />
+<style>
+.intro-backdrop {
+  height: 100vh; margin: 0; display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(ellipse at center, color-mix(in srgb, var(--primary-dark) 55%, #0b0e10) 0%, #0b0e10 75%);
+}
+</style>
+</head>
+<body class="intro-backdrop">
+<div id="wordmarkIntroRoot"></div>
+
+<script src="js/theme.js"></script>
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/wordmark-intro.js"></script>
+<script>
+(async () => {
+  const user = await requireSession();
+  if (!user) return;
+  renderWordmarkIntro('wordmarkIntroRoot', () => {
+    window.location.href = 'home.html';
+  });
+})();
+</script>
+</body>
+</html>

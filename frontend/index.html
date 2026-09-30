@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MechVerse — Sign in</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/0/css/font-awesome.min.css" />
+<link rel="stylesheet" href="css/style.css" />
+<style>
+html, body { height: 100%; }
+.split-auth { display: flex; min-height: 100vh; }
+
+.split-auth-panel {
+  flex: 1; background: var(--primary-dark); position: relative; overflow: hidden;
+  display: flex; flex-direction: column; justify-content: center; padding: 56px;
+  box-shadow: 8px 0 24px -8px rgba(0,0,0,0.35);
+}
+.split-auth-panel .brand-chip {
+  display: inline-flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.1);
+  padding: 8px 14px; border-radius: 8px; margin-bottom: 28px; width: fit-content;
+}
+.split-auth-panel .brand-chip span { color: var(--panel-ink); font-weight: 700; font-size: 15px; }
+.split-auth-panel h1 {
+  font-size: 44px; color: var(--panel-ink); line-height: 1.25; margin-bottom: 18px; max-width: none; white-space: nowrap;
+}
+.split-auth-panel .tagline {
+  font-size: 17px; color: var(--panel-ink-soft); line-height: 1.6; max-width: none; white-space: nowrap;
+}
+/* "MechVerse!" in the headline: theme-aware, same idea as the landing-page
+   hero (.mv-brand-glow) but lighter so it stays readable on the panel. */
+.auth-brand-glow {
+  background: linear-gradient(90deg,
+    color-mix(in srgb, var(--primary) 45%, white),
+    color-mix(in srgb, var(--primary) 75%, white));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.panel-logo-topright {
+  position: absolute; top: 24px; right: 24px; z-index: 2;
+}
+/* ---- Interactive + decorative gear system (left auth panel) ---- */
+.feature-gears { position: absolute; inset: 0; pointer-events: none; }
+
+@keyframes gearSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+/* purely decorative background gears — always spinning, never interactive */
+.decor-gear {
+  position: absolute; width: var(--size); aspect-ratio: 1;
+  transform: translate(-50%, -50%); pointer-events: none;
+}
+.decor-gear-spin {
+  display: block; width: 100%; height: 100%;
+  animation: gearSpin var(--spin-dur, 16s) linear infinite;
+  animation-direction: var(--spin-dir, normal);
+}
+.decor-gear-icon { display: block; width: 100%; height: 100%; opacity: 0.14; }
+
+/* interactive feature gears.
+   Note: the button itself is NEVER scaled — only the inner .feature-gear-face
+   wrapper is. This keeps the label (a sibling, absolutely positioned off the
+   button) completely unaffected by the icon's hover scale, so it can't get
+   dragged out of place or clipped, and hover/unhover stays reliable. */
+.feature-gear {
+  position: absolute; width: var(--size); aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  background: none; border: 0; padding: 0; margin: 0; cursor: pointer;
+  pointer-events: auto; -webkit-tap-highlight-color: transparent;
+}
+.feature-gear:focus-visible { outline: none; }
+
+.feature-gear-face {
+  display: block; width: 100%; height: 100%;
+  transition: transform .18s ease-out;
+}
+.feature-gear:hover .feature-gear-face,
+.feature-gear:focus-visible .feature-gear-face,
+.feature-gear.is-active .feature-gear-face {
+  transform: scale(1.22);
+}
+
+.feature-gear-spin {
+  display: block; width: 100%; height: 100%;
+  animation: gearSpin var(--spin-dur, 14s) linear infinite;
+  animation-direction: var(--spin-dir, normal);
+}
+.feature-gear-icon {
+  display: block; width: 100%; height: 100%;
+  opacity: 0.28; transition: opacity .18s ease-out;
+}
+.feature-gear:hover .feature-gear-icon,
+.feature-gear:focus-visible .feature-gear-icon,
+.feature-gear.is-active .feature-gear-icon {
+  opacity: 0.95;
+}
+
+.feature-gear-label {
+  position: absolute; left: 50%; top: 100%; z-index: 7;
+  transform: translate(-50%, -2px); width: max-content; max-width: 168px;
+  text-align: center; opacity: 0; pointer-events: none;
+  background: color-mix(in srgb, var(--primary-dark) 88%, black 6%);
+  border: 1px solid color-mix(in srgb, var(--panel-ink) 18%, transparent);
+  border-radius: 8px; padding: 6px 10px; margin-top: 10px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.28);
+  transition: opacity .12s ease-out, transform .12s ease-out;
+}
+.feature-gear-label strong { display: block; font-size: 12px; color: var(--panel-ink); }
+.feature-gear-label small { display: block; font-size: 10.5px; color: var(--panel-ink-soft); margin-top: 1px; line-height: 1.3; }
+
+.feature-gear:hover .feature-gear-label,
+.feature-gear:focus-visible .feature-gear-label,
+.feature-gear.is-active .feature-gear-label {
+  opacity: 1; transform: translate(-50%, 4px);
+}
+
+.feature-gear.label-above .feature-gear-label { top: auto; bottom: 100%; margin-top: 0; margin-bottom: 10px; transform: translate(-50%, 2px); }
+.feature-gear.label-above:hover .feature-gear-label,
+.feature-gear.label-above:focus-visible .feature-gear-label,
+.feature-gear.label-above.is-active .feature-gear-label { transform: translate(-50%, -4px); }
+
+.feature-gear.label-left .feature-gear-label { left: auto; right: 0; transform: translate(0, -2px); text-align: right; }
+.feature-gear.label-left:hover .feature-gear-label,
+.feature-gear.label-left:focus-visible .feature-gear-label,
+.feature-gear.label-left.is-active .feature-gear-label { transform: translate(0, 4px); }
+.feature-gear.label-left.label-above .feature-gear-label { transform: translate(0, 2px); }
+.feature-gear.label-left.label-above:hover .feature-gear-label,
+.feature-gear.label-left.label-above:focus-visible .feature-gear-label,
+.feature-gear.label-left.label-above.is-active .feature-gear-label { transform: translate(0, -4px); }
+
+.feature-gear.label-right .feature-gear-label { left: 0; transform: translate(0, -2px); text-align: left; }
+.feature-gear.label-right:hover .feature-gear-label,
+.feature-gear.label-right:focus-visible .feature-gear-label,
+.feature-gear.label-right.is-active .feature-gear-label { transform: translate(0, 4px); }
+.feature-gear.label-right.label-above .feature-gear-label { transform: translate(0, 2px); }
+.feature-gear.label-right.label-above:hover .feature-gear-label,
+.feature-gear.label-right.label-above:focus-visible .feature-gear-label,
+.feature-gear.label-right.label-above.is-active .feature-gear-label { transform: translate(0, -4px); }
+
+@media (prefers-reduced-motion: reduce) {
+  .feature-gear-face, .feature-gear-label, .feature-gear-icon, .feature-gear-spin, .decor-gear-spin {
+    transition: none !important; animation: none !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .feature-gear, .decor-gear { width: calc(var(--size) * 0.62) !important; }
+  .feature-gear-label { max-width: 128px; padding: 5px 8px; }
+  .feature-gear-label strong { font-size: 11px; }
+  .feature-gear-label small { font-size: 9.5px; }
+}
+
+.split-auth-form-side {
+  flex: 1; position: relative; overflow: hidden;
+  background: radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--primary) 22%, transparent) 0%, transparent 62%), var(--surface);
+  display: flex; align-items: center; justify-content: center; padding: 40px;
+}
+@keyframes bracketIn { from { opacity: 0; transform: scale(0.7); } to { opacity: 0.7; transform: scale(1); } }
+.form-side-bracket {
+  position: absolute; width: 48px; height: 48px; border-color: var(--primary); pointer-events: none;
+  opacity: 0; animation: bracketIn .6s ease .3s both;
+}
+.form-side-bracket.top-left { top: 20px; left: 20px; border-top: 3px solid; border-left: 3px solid; border-top-left-radius: 10px; }
+.form-side-bracket.bottom-right { bottom: 20px; right: 20px; border-bottom: 3px solid; border-right: 3px solid; border-bottom-right-radius: 10px; animation-delay: .45s; }
+.split-auth-form-inner { width: 100%; max-width: 400px; }
+
+@keyframes cardIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+.split-auth-form-inner { animation: cardIn .5s ease both; }
+
+@keyframes shake {
+  10%, 90% { transform: translateX(-1px); }
+  20%, 80% { transform: translateX(2px); }
+  30%, 50%, 70% { transform: translateX(-4px); }
+  40%, 60% { transform: translateX(4px); }
+}
+.shake { animation: shake .5s ease; }
+
+#formHeading h2 { font-size: 21px; margin-bottom: 4px; }
+#formHeading p { font-size: 13px; margin-bottom: 22px; }
+
+#tabs { position: relative; }
+#tabIndicator {
+  position: absolute; top: 0; bottom: 0; width: 50%; background: var(--primary);
+  border-radius: var(--radius-sm); transition: transform .25s ease; z-index: 0;
+}
+#tabs button.btn-outline {
+  position: relative; z-index: 1; background: transparent; border-color: transparent;
+  transition: color .2s ease, background .2s ease, transform .15s ease;
+}
+#tabs button.btn-outline:hover { border-color: transparent; }
+#tabs button.btn-outline:not(.tab-active):hover { background: var(--primary-tint); color: var(--primary-dark); }
+#tabs button.btn-outline:active { transform: scale(0.97); }
+#tabs button.tab-active { color: #fff; }
+#tabs button.tab-active { color: #fff; }
+
+.field { transition: transform .15s ease; }
+.field:has(input:focus) label { color: var(--primary); }
+.field:has(input:focus) { transform: translateY(-1px); }
+input, select, textarea { transition: border-color .18s ease, box-shadow .18s ease; }
+
+.input-icon-wrap { position: relative; }
+.input-icon-wrap svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--ink-soft); pointer-events: none; }
+.input-icon-wrap input { padding-left: 36px; }
+
+.pw-field { position: relative; }
+.pw-toggle {
+  position: absolute; right: 10px; top: 33px; background: none; border: none; cursor: pointer;
+  color: var(--ink-soft); padding: 4px; display: flex; align-items: center;
+}
+.pw-toggle:hover { color: var(--primary); }
+
+.forgot-link-row { text-align: right; margin: -10px 0 16px; }
+.forgot-link-row a { font-size: 12px; color: var(--ink-soft); text-decoration: none; cursor: pointer; }
+.forgot-link-row a:hover { color: var(--primary); text-decoration: underline; }
+#forgotMsg { font-size: 12px; margin: -10px 0 16px; text-align: right; color: var(--ink-soft); }
+
+.terms-row { font-size: 13px; }
+.terms-row label { font-weight: 400; color: var(--ink-soft); margin: 0; }
+.terms-row a { color: var(--primary); text-decoration: none; }
+.terms-row a:hover { text-decoration: underline; }
+
+.switch-form-link { text-align: center; font-size: 13px; color: var(--ink-soft); margin: 16px 0 0; }
+.switch-form-link a { color: var(--primary); font-weight: 600; text-decoration: none; cursor: pointer; }
+.switch-form-link a:hover { text-decoration: underline; }
+
+.spinner {
+  width: 15px; height: 15px; border: 2px solid rgba(255,255,255,0.4); border-top-color: #fff;
+  border-radius: 50%; animation: spin .6s linear infinite; display: inline-block; margin-right: 8px; vertical-align: -2px;
+}
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+form { transition: opacity .2s ease; }
+
+.modal-backdrop {
+  position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--primary-dark) 82%, transparent), color-mix(in srgb, var(--primary) 55%, transparent));
+  opacity: 0; pointer-events: none; padding: 20px;
+  backdrop-filter: blur(3px);
+  transition: opacity .3s ease;
+}
+.modal-backdrop.open { opacity: 1; pointer-events: auto; }
+.modal-card {
+  background: var(--surface); border-radius: 14px; padding: 36px 40px; width: 100%; max-width: 440px;
+  position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  transform: scale(0.92) translateY(10px); opacity: 0;
+  transition: transform .32s cubic-bezier(.34,1.5,.64,1), opacity .25s ease;
+}
+.modal-backdrop.open .modal-card { transform: scale(1) translateY(0); opacity: 1; }
+.modal-close {
+  position: absolute; top: 14px; right: 14px; background: none; border: none; font-size: 20px;
+  line-height: 1; cursor: pointer; color: var(--ink-soft);
+}
+.modal-close:hover { color: var(--primary); }
+
+@media (max-width: 760px) {
+  .split-auth { flex-direction: column; }
+  .split-auth-panel { padding: 32px; min-height: 200px; }
+  .split-auth-panel h1 { font-size: 22px; }
+  .split-auth-form-side { padding: 28px; }
+}
+</style>
+</head>
+<body>
+
+<div class="split-auth">
+  <div class="split-auth-panel">
+    <svg width="0" height="0" style="position:absolute;">
+  <defs>
+    <radialGradient id="gearGlossy" cx="35%" cy="30%" r="75%">
+      <stop offset="0%" stop-color="color-mix(in srgb, var(--primary) 30%, white)"/>
+      <stop offset="55%" stop-color="var(--primary-tint)"/>
+      <stop offset="100%" stop-color="var(--primary-dark)"/>
+    </radialGradient>
+    <mask id="gearHole">
+      <circle cx="50" cy="50" r="46" fill="white"/>
+      <circle cx="50" cy="50" r="14" fill="black"/>
+    </mask>
+  </defs>
+  <symbol id="gearFilled4" viewBox="0 0 100 100">
+    <g mask="url(#gearHole)" fill="url(#gearGlossy)">
+      <circle cx="50" cy="50" r="32"/>
+      <rect x="44.5" y="4.0" width="11" height="14" rx="3" transform="rotate(0.0 50 50)"/>
+      <rect x="44.5" y="4.0" width="11" height="14" rx="3" transform="rotate(36.0 50 50)"/>
+      <rect x="44.5" y="4.0" width="11" height="14" rx="3" transform="rotate(72.0 50 50)"/>
+      <rect x="44.5" y="4.0" width="11" height="14" rx="3" transform="rotate(108.0 50 50)"/>
+      <rect x="44.5" y="4.0" width="11" height="14" rx="3" transform="rotate(144.0 50 50)"/>
+      <rect x="44.5" y="4.0" width="11" height="14" rx="3" transform="rotate(180.0 50 50)"/>
+      <rect x="44.5" y="4.0" width="11" height="14" rx="3" transform="rotate(216.0 50 50)"/>
+      <rect x="44.5" y="4.0" width="11" height="14" rx="3" transform="rotate(252.0 50 50)"/>
+      <rect x="44.5" y="4.0" width="11" height="14" rx="3" transform="rotate(288.0 50 50)"/>
+      <rect x="44.5" y="4.0" width="11" height="14" rx="3" transform="rotate(324.0 50 50)"/>
+    </g>
+  </symbol>
+</svg>
+
+<div class="feature-gears">
+  <button type="button" class="feature-gear label-right" style="--size:9%; left:14%; top:12%; --spin-dur:14s; --spin-dir:normal;" aria-label="Notes: Lecture notes and resources">
+    <span class="feature-gear-face"><span class="feature-gear-spin"><svg class="feature-gear-icon" viewBox="0 0 100 100"><use href="#gearFilled4"/></svg></span></span>
+    <span class="feature-gear-label" aria-hidden="true"><strong>Notes</strong><small>Lecture notes &amp; resources</small></span>
+  </button>
+  <button type="button" class="feature-gear" style="--size:6%; left:28%; top:20%; --spin-dur:10s; --spin-dir:reverse;" aria-label="PYQs: Past papers, future-ready!">
+    <span class="feature-gear-face"><span class="feature-gear-spin"><svg class="feature-gear-icon" viewBox="0 0 100 100"><use href="#gearFilled4"/></svg></span></span>
+    <span class="feature-gear-label" aria-hidden="true"><strong>PYQs</strong><small>Past papers, future-ready!</small></span>
+  </button>
+  <button type="button" class="feature-gear" style="--size:9%; left:44%; top:8%; --spin-dur:18s; --spin-dir:normal;" aria-label="Study Resources: Curated study material">
+    <span class="feature-gear-face"><span class="feature-gear-spin"><svg class="feature-gear-icon" viewBox="0 0 100 100"><use href="#gearFilled4"/></svg></span></span>
+    <span class="feature-gear-label" aria-hidden="true"><strong>Study Resources</strong><small>Curated study material</small></span>
+  </button>
+  <button type="button" class="feature-gear label-left" style="--size:14%; left:82%; top:18%; --spin-dur:22s; --spin-dir:reverse;" aria-label="Resource Hub: All your academic essentials, sorted!">
+    <span class="feature-gear-face"><span class="feature-gear-spin"><svg class="feature-gear-icon" viewBox="0 0 100 100"><use href="#gearFilled4"/></svg></span></span>
+    <span class="feature-gear-label" aria-hidden="true"><strong>Resource Hub</strong><small>All your academic essentials, sorted!</small></span>
+  </button>
+  <button type="button" class="feature-gear label-left" style="--size:6%; left:92%; top:42%; --spin-dur:9s; --spin-dir:normal;" aria-label="Experiments: Step-by-step lab guides">
+    <span class="feature-gear-face"><span class="feature-gear-spin"><svg class="feature-gear-icon" viewBox="0 0 100 100"><use href="#gearFilled4"/></svg></span></span>
+    <span class="feature-gear-label" aria-hidden="true"><strong>Experiments</strong><small>Step-by-step lab guides</small></span>
+  </button>
+  <button type="button" class="feature-gear label-left" style="--size:14%; left:85%; top:68%; --spin-dur:20s; --spin-dir:normal;" aria-label="Grade Planner: Plan your target SGPA">
+    <span class="feature-gear-face"><span class="feature-gear-spin"><svg class="feature-gear-icon" viewBox="0 0 100 100"><use href="#gearFilled4"/></svg></span></span>
+    <span class="feature-gear-label" aria-hidden="true"><strong>Grade Planner</strong><small>Plan your target SGPA</small></span>
+  </button>
+  <button type="button" class="feature-gear label-above" style="--size:9%; left:58%; top:88%; --spin-dur:13s; --spin-dir:reverse;" aria-label="Grades: Track your grades">
+    <span class="feature-gear-face"><span class="feature-gear-spin"><svg class="feature-gear-icon" viewBox="0 0 100 100"><use href="#gearFilled4"/></svg></span></span>
+    <span class="feature-gear-label" aria-hidden="true"><strong>Grades</strong><small>Track your grades</small></span>
+  </button>
+  <button type="button" class="feature-gear label-above" style="--size:9%; left:36%; top:90%; --spin-dur:16s; --spin-dir:normal;" aria-label="Lab Companion: Lab manuals and viva prep">
+    <span class="feature-gear-face"><span class="feature-gear-spin"><svg class="feature-gear-icon" viewBox="0 0 100 100"><use href="#gearFilled4"/></svg></span></span>
+    <span class="feature-gear-label" aria-hidden="true"><strong>Lab Companion</strong><small>Lab manuals &amp; viva prep</small></span>
+  </button>
+  <button type="button" class="feature-gear label-above label-right" style="--size:6%; left:8%; top:88%; --spin-dur:11s; --spin-dir:reverse;" aria-label="SGPA Calculator: Instant SGPA calculation">
+    <span class="feature-gear-face"><span class="feature-gear-spin"><svg class="feature-gear-icon" viewBox="0 0 100 100"><use href="#gearFilled4"/></svg></span></span>
+    <span class="feature-gear-label" aria-hidden="true"><strong>SGPA Calculator</strong><small>Instant SGPA calculation</small></span>
+  </button>
+
+  <!-- purely decorative gears — spin continuously, no hover/tap behavior -->
+  <span class="decor-gear" aria-hidden="true" style="--size:7%; left:64%; top:14%; --spin-dur:24s; --spin-dir:normal;">
+    <span class="decor-gear-spin"><svg class="decor-gear-icon" viewBox="0 0 100 100"><use href="#gearFilled4"/></svg></span>
+  </span>
+  <span class="decor-gear" aria-hidden="true" style="--size:4%; left:50%; top:4%; --spin-dur:9s; --spin-dir:reverse;">
+    <span class="decor-gear-spin"><svg class="decor-gear-icon" viewBox="0 0 100 100"><use href="#gearFilled4"/></svg></span>
+  </span>
+  <span class="decor-gear" aria-hidden="true" style="--size:5%; left:76%; top:48%; --spin-dur:15s; --spin-dir:normal;">
+    <span class="decor-gear-spin"><svg class="decor-gear-icon" viewBox="0 0 100 100"><use href="#gearFilled4"/></svg></span>
+  </span>
+  <span class="decor-gear" aria-hidden="true" style="--size:4%; left:94%; top:90%; --spin-dur:12s; --spin-dir:reverse;">
+    <span class="decor-gear-spin"><svg class="decor-gear-icon" viewBox="0 0 100 100"><use href="#gearFilled4"/></svg></span>
+  </span>
+  <span class="decor-gear" aria-hidden="true" style="--size:4%; left:22%; top:6%; --spin-dur:19s; --spin-dir:normal;">
+    <span class="decor-gear-spin"><svg class="decor-gear-icon" viewBox="0 0 100 100"><use href="#gearFilled4"/></svg></span>
+  </span>
+  <span class="decor-gear" aria-hidden="true" style="--size:4%; left:8%; top:74%; --spin-dur:8s; --spin-dir:reverse;">
+    <span class="decor-gear-spin"><svg class="decor-gear-icon" viewBox="0 0 100 100"><use href="#gearFilled4"/></svg></span>
+  </span>
+  <span class="decor-gear" aria-hidden="true" style="--size:5%; left:50%; top:38%; --spin-dur:17s; --spin-dir:reverse;">
+    <span class="decor-gear-spin"><svg class="decor-gear-icon" viewBox="0 0 100 100"><use href="#gearFilled4"/></svg></span>
+  </span>
+  <span class="decor-gear" aria-hidden="true" style="--size:4%; left:60%; top:52%; --spin-dur:13s; --spin-dir:normal;">
+    <span class="decor-gear-spin"><svg class="decor-gear-icon" viewBox="0 0 100 100"><use href="#gearFilled4"/></svg></span>
+  </span>
+  <span class="decor-gear" aria-hidden="true" style="--size:6%; left:46%; top:60%; --spin-dur:21s; --spin-dir:reverse;">
+    <span class="decor-gear-spin"><svg class="decor-gear-icon" viewBox="0 0 100 100"><use href="#gearFilled4"/></svg></span>
+  </span>
+
+  <!-- top loop (as annotated) -->
+  <span class="decor-gear" aria-hidden="true" style="--size:4%; left:50%; top:20%; --spin-dur:15s; --spin-dir:normal;">
+    <span class="decor-gear-spin"><svg class="decor-gear-icon" viewBox="0 0 100 100"><use href="#gearFilled4"/></svg></span>
+  </span>
+  <span class="decor-gear" aria-hidden="true" style="--size:5%; left:62%; top:28%; --spin-dur:19s; --spin-dir:reverse;">
+    <span class="decor-gear-spin"><svg class="decor-gear-icon" viewBox="0 0 100 100"><use href="#gearFilled4"/></svg></span>
+  </span>
+  <span class="decor-gear" aria-hidden="true" style="--size:4%; left:76%; top:34%; --spin-dur:12s; --spin-dir:normal;">
+    <span class="decor-gear-spin"><svg class="decor-gear-icon" viewBox="0 0 100 100"><use href="#gearFilled4"/></svg></span>
+  </span>
+
+  <!-- bottom loop (as annotated) -->
+  <span class="decor-gear" aria-hidden="true" style="--size:4%; left:22%; top:66%; --spin-dur:17s; --spin-dir:reverse;">
+    <span class="decor-gear-spin"><svg class="decor-gear-icon" viewBox="0 0 100 100"><use href="#gearFilled4"/></svg></span>
+  </span>
+  <span class="decor-gear" aria-hidden="true" style="--size:5%; left:42%; top:74%; --spin-dur:10s; --spin-dir:normal;">
+    <span class="decor-gear-spin"><svg class="decor-gear-icon" viewBox="0 0 100 100"><use href="#gearFilled4"/></svg></span>
+  </span>
+  <span class="decor-gear" aria-hidden="true" style="--size:4%; left:64%; top:78%; --spin-dur:14s; --spin-dir:reverse;">
+    <span class="decor-gear-spin"><svg class="decor-gear-icon" viewBox="0 0 100 100"><use href="#gearFilled4"/></svg></span>
+  </span>
+</div>
+       <span class="panel-logo-topright"><span class="logo-circle" style="width:56px; height:56px;"><img src="assets/logo.png" alt="MechVerse" /></span></span>
+    <div style="position:relative; z-index:1; width: fit-content; max-width: 100%;">
+      <h1>Begin Your<br>Mechanical Engineering Journey<br>With <span class="auth-brand-glow">MechVerse!</span></h1>
+      <p class="tagline">Hover Around And Discover What MechVerse Has To Offer...</p>
+    </div>
+  </div>
+
+  <div class="split-auth-form-side">
+    <div class="form-side-bracket top-left"></div>
+    <div class="form-side-bracket bottom-right"></div>
+    <div class="split-auth-form-inner" id="authCard">
+      <div id="formHeading">
+        <h2>Welcome back</h2>
+        <p class="muted">Log in to continue to MechVerse.</p>
+      </div>
+
+      <div id="tabs" style="display:flex; gap:6px; margin-bottom:20px;">
+        <div id="tabIndicator"></div>
+        <button class="btn btn-outline tab-active" id="tabLogin" style="flex:1;">Log in</button>
+        <button class="btn btn-outline" id="tabRegister" style="flex:1;">Sign up</button>
+      </div>
+
+      <div id="errorBox" class="alert alert-error hidden"></div>
+
+      <form id="loginForm">
+        <div class="field">
+          <label>Email</label>
+          <div class="input-icon-wrap">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 6 10-6"/></svg>
+            <input type="email" id="loginEmail" required placeholder="college or personal email" />
+          </div>
+        </div>
+        <div class="field pw-field">
+          <label>Password</label>
+          <div class="input-icon-wrap">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg>
+            <input type="password" id="loginPassword" required />
+          </div>
+          <button type="button" class="pw-toggle" data-target="loginPassword" aria-label="Show password">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+        <div class="forgot-link-row"><a id="forgotPasswordLink">Forgot password?</a></div>
+        <button class="btn btn-primary btn-block" type="submit" id="loginSubmitBtn">Log in</button>
+        <p class="switch-form-link">New here? <a id="goToRegister">Create an account</a></p>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="registerModalBackdrop">
+  <div class="modal-card" id="registerModalCard">
+    <button type="button" class="modal-close" id="closeRegisterModal" aria-label="Close">✕</button>
+    <h2 style="font-size:21px; margin-bottom:4px;">Create your account</h2>
+    <p class="muted" style="margin-bottom:22px;">Set up your MechVerse profile.</p>
+    <div id="registerErrorBox" class="alert alert-error hidden"></div>
+    <form id="registerForm">
+      <div class="field"><label>Full name</label><input type="text" id="regName" required /></div>
+      <div class="field">
+        <label>Email</label>
+        <div class="input-icon-wrap">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 6 10-6"/></svg>
+          <input type="email" id="regEmail" required placeholder="college or personal email" />
+        </div>
+      </div>
+      <div class="field pw-field">
+        <label>Password</label>
+        <div class="input-icon-wrap">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg>
+          <input type="password" id="regPassword" required minlength="8" />
+        </div>
+        <button type="button" class="pw-toggle" data-target="regPassword" aria-label="Show password">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </div>
+      <div class="field"><label>Semester</label>
+        <select id="regSemester">
+          <option selected>1</option><option>2</option><option>3</option><option>4</option>
+        </select>
+      </div>
+      <div class="checkbox-row terms-row">
+        <input type="checkbox" id="regTerms" required />
+        <label for="regTerms">I agree to the <a href="#" onclick="return false;">Terms</a> and <a href="#" onclick="return false;">Privacy Policy</a></label>
+      </div>
+      <button class="btn btn-primary btn-block" type="submit" id="registerSubmitBtn">Create account</button>
+      <p class="switch-form-link">Already have an account? <a id="goToLoginModal">Log in</a></p>
+    </form>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="forgotModalBackdrop">
+  <div class="modal-card" id="forgotModalCard">
+    <button type="button" class="modal-close" id="closeForgotModal" aria-label="Close">✕</button>
+    <h2 style="font-size:21px; margin-bottom:4px;">Reset your password</h2>
+    <p class="muted" style="margin-bottom:22px;">Enter the email on your account and we'll send you a reset link.</p>
+    <div class="field">
+      <label>Email</label>
+      <div class="input-icon-wrap">
+        <input type="email" id="forgotEmail" placeholder="you@example.com" />
+      </div>
+    </div>
+    <button type="button" class="btn btn-primary btn-block" id="forgotSubmitBtn">Send reset link</button>
+    <div id="forgotMsg" class="hidden" style="font-size:12px; margin-top:14px;"></div>
+  </div>
+</div>
+
+<script src="js/theme.js"></script>
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script>
+const loginForm = document.getElementById('loginForm');
+const registerForm = document.getElementById('registerForm');
+const errorBox = document.getElementById('errorBox');
+const registerErrorBox = document.getElementById('registerErrorBox');
+const authCard = document.getElementById('authCard');
+const tabLogin = document.getElementById('tabLogin');
+const tabRegister = document.getElementById('tabRegister');
+const registerModalBackdrop = document.getElementById('registerModalBackdrop');
+const registerModalCard = document.getElementById('registerModalCard');
+
+function openRegisterModal() {
+  registerModalBackdrop.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeRegisterModal() {
+  registerModalBackdrop.classList.remove('open');
+  document.body.style.overflow = '';
+  registerErrorBox.classList.add('hidden');
+}
+
+tabRegister.onclick = () => openRegisterModal();
+document.getElementById('goToRegister').onclick = () => openRegisterModal();
+document.getElementById('goToLoginModal').onclick = () => closeRegisterModal();
+document.getElementById('closeRegisterModal').onclick = () => closeRegisterModal();
+registerModalBackdrop.addEventListener('click', (e) => {
+  if (e.target === registerModalBackdrop) closeRegisterModal();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && registerModalBackdrop.classList.contains('open')) closeRegisterModal();
+});
+
+document.querySelectorAll('.feature-gear').forEach(gear => {
+  gear.addEventListener('click', () => {
+    const wasActive = gear.classList.contains('is-active');
+    document.querySelectorAll('.feature-gear.is-active').forEach(g => g.classList.remove('is-active'));
+    if (!wasActive) gear.classList.add('is-active');
+  });
+});
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.feature-gear')) {
+    document.querySelectorAll('.feature-gear.is-active').forEach(g => g.classList.remove('is-active'));
+  }
+});
+
+document.querySelectorAll('.pw-toggle').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const input = document.getElementById(btn.dataset.target);
+    const showing = input.type === 'text';
+    input.type = showing ? 'password' : 'text';
+    btn.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
+  });
+});
+
+const forgotModalBackdrop = document.getElementById('forgotModalBackdrop');
+
+function openForgotModal() {
+  document.getElementById('forgotEmail').value = '';
+  document.getElementById('forgotMsg').classList.add('hidden');
+  forgotModalBackdrop.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeForgotModal() {
+  forgotModalBackdrop.classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+document.getElementById('forgotPasswordLink').addEventListener('click', (e) => {
+  e.preventDefault();
+  openForgotModal();
+});
+document.getElementById('closeForgotModal').addEventListener('click', closeForgotModal);
+forgotModalBackdrop.addEventListener('click', (e) => {
+  if (e.target === forgotModalBackdrop) closeForgotModal();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && forgotModalBackdrop.classList.contains('open')) closeForgotModal();
+});
+
+document.getElementById('forgotSubmitBtn').addEventListener('click', async () => {
+  const email = document.getElementById('forgotEmail').value.trim();
+  const msg = document.getElementById('forgotMsg');
+  const btn = document.getElementById('forgotSubmitBtn');
+  if (!email) { showError(msg, 'Enter your email first.'); msg.classList.remove('hidden'); return; }
+
+  setLoading(btn, true, 'Send reset link');
+  try {
+    const { emailSent, resetUrl } = await api('/auth/forgot-password', { method: 'POST', body: { email } });
+    msg.classList.remove('hidden');
+    msg.style.color = 'var(--success)';
+    if (emailSent) {
+      // Real email went out -- don't show the link itself, that defeats
+      // the point of verifying the person actually owns the inbox.
+      msg.textContent = `If an account exists for ${email}, a reset link is on its way please check your inbox (and spam folder) over the next couple of minutes.`;
+    } else if (resetUrl) {
+      // No SMTP configured yet (local dev) -- show the link directly so
+      // the flow is still testable end to end without setting up email.
+      msg.style.color = 'var(--ink-soft)';
+      msg.innerHTML = `Email isn't configured yet, so here's your reset link directly (dev mode only):<br /><a href="${resetUrl}" style="color:var(--primary); word-break:break-all;">${resetUrl}</a>`;
+    } else {
+      // No matching account -- same wording as the success case on
+      // purpose, so this can't be used to check which emails are registered.
+      msg.textContent = `If an account exists for ${email}, a reset link is on its way please check your inbox (and spam folder) over the next couple of minutes.`;
+    }
+  } catch (err) {
+    msg.classList.remove('hidden');
+    msg.style.color = 'var(--danger)';
+    showError(msg, err.message);
+  } finally {
+    setLoading(btn, false, 'Send reset link');
+  }
+});
+
+function shakeEl(el) {
+  el.classList.remove('shake');
+  void el.offsetWidth;
+  el.classList.add('shake');
+}
+
+function setLoading(btn, loading, label) {
+  btn.disabled = loading;
+  btn.innerHTML = loading ? `<span class="spinner"></span>${label}` : label;
+}
+
+loginForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  errorBox.classList.add('hidden');
+  const btn = document.getElementById('loginSubmitBtn');
+  setLoading(btn, true, 'Log in');
+  try {
+    await api('/auth/login', { method: 'POST', body: {
+      email: document.getElementById('loginEmail').value,
+      password: document.getElementById('loginPassword').value,
+    }});
+    window.location.href = 'intro.html';
+  } catch (err) {
+    showError(errorBox, err.message);
+    shakeEl(authCard);
+    setLoading(btn, false, 'Log in');
+  }
+});
+
+registerForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  registerErrorBox.classList.add('hidden');
+  const btn = document.getElementById('registerSubmitBtn');
+  setLoading(btn, true, 'Create account');
+  try {
+    await api('/auth/register', { method: 'POST', body: {
+      name: document.getElementById('regName').value,
+      email: document.getElementById('regEmail').value,
+      password: document.getElementById('regPassword').value,
+      semester: Number(document.getElementById('regSemester').value),
+    }});
+    window.location.href = 'intro.html';
+  } catch (err) {
+    showError(registerErrorBox, err.message);
+    shakeEl(registerModalCard);
+    setLoading(btn, false, 'Create account');
+  }
+});
+
+api('/auth/me').then(() => window.location.href = 'intro.html').catch(() => {});
+</script>
+</body>
+</html>

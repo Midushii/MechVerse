@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MechVerse — Dashboard</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<div class="bg-fx" aria-hidden="true">
+  <span class="bg-blob bg-blob-1"></span>
+  <span class="bg-blob bg-blob-2"></span>
+  <span class="bg-blob bg-blob-3"></span>
+  <span class="bg-icon bg-icon-1">⚙️</span>
+  <span class="bg-icon bg-icon-2">📐</span>
+  <span class="bg-icon bg-icon-3">🔧</span>
+  <span class="bg-icon bg-icon-4">🛠️</span>
+</div>
+<div id="topbar-root"></div>
+<div class="container">
+  <div class="section-title dashboard-header-row" style="margin-top:0;">
+    <div><h2 class="page-title">Semester Dashboard</h2><p class="muted" id="semesterLabel"></p></div>
+    <div class="dashboard-header-controls">
+      <span id="streakBadge"></span>
+      <select id="semesterSwitch" style="max-width:160px;">
+        <option value="1">Semester 1</option><option value="2">Semester 2</option><option value="3">Semester 3</option><option value="4">Semester 4</option>
+      </select>
+      <input type="text" id="searchInput" placeholder="Search notes,PYQs..." style="max-width:260px;" />
+    </div>
+  </div>
+  <div id="searchResults" class="card bracket hidden" style="margin-bottom:20px;"></div>
+
+  <div class="grid cols-2 dashboard-top-grid" style="margin-bottom:8px;">
+    <div class="card bracket">
+      <div class="muted">📖 Continue learning</div>
+      <div id="recentList" style="margin-top:8px;"></div>
+    </div>
+    <div class="card bracket">
+      <div class="muted">⭐ Bookmarks</div>
+      <div id="bookmarkList" style="margin-top:8px;"></div>
+    </div>
+  </div>
+
+  <div id="typeCountStrip" class="type-count-strip"></div>
+  <div id="typeFilterResults" class="hidden" style="margin-bottom:24px;"></div>
+
+  <div class="section-title"><h3>Your subjects</h3></div>
+  <div class="spotlight-zone" id="spotlightZone">
+    <div class="cursor-spotlight" id="cursorSpotlight"></div>
+    <div id="subjectGrid" class="grid cols-3"></div>
+  </div>
+    
+  <script>
+    // Show the credit only while Semester 1 or 2 is being viewed.
+    (function () {
+      const label = document.getElementById('semesterLabel');
+      const credit = document.getElementById('notesCredit');
+      if (!label || !credit) return;
+      function sync() {
+        const m = /semester\s+(\d+)/i.exec(label.textContent || '');
+        const sem = m ? Number(m[1]) : null;
+        credit.style.display = (sem === 1 || sem === 2) ? 'block' : 'none';
+      }
+      new MutationObserver(sync).observe(label, { childList: true, characterData: true, subtree: true });
+      sync();
+
+      // Use the same font as the "Semester Dashboard" heading.
+      function matchFont() {
+        const h = document.querySelector('.dashboard-header-row .page-title') || document.querySelector('.page-title');
+        if (h) credit.style.fontFamily = getComputedStyle(h).fontFamily;
+      }
+      matchFont();
+      new MutationObserver(matchFont).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    })();
+  </script>
+  <script>
+    // Show the credit only while Semester 1 or 2 is being viewed.
+    (function () {
+      const label = document.getElementById('semesterLabel');
+      const credit = document.getElementById('notesCredit');
+      if (!label || !credit) return;
+      function sync() {
+        const m = /semester\s+(\d+)/i.exec(label.textContent || '');
+        const sem = m ? Number(m[1]) : null;
+        credit.style.display = (sem === 1 || sem === 2) ? 'flex' : 'none';
+      }
+      new MutationObserver(sync).observe(label, { childList: true, characterData: true, subtree: true });
+      sync();
+
+      // Copy the "Semester Dashboard" heading's font and underline gradient, so they always match.
+      function matchHeading() {
+        const h = document.querySelector('.dashboard-header-row .page-title') || document.querySelector('.page-title');
+        if (!h) return;
+        const cs = getComputedStyle(h);
+        credit.style.fontFamily = cs.fontFamily;
+        for (const s of [getComputedStyle(h, '::after'), getComputedStyle(h, '::before'), cs]) {
+          const img = s.backgroundImage !== 'none' ? s.backgroundImage : s.borderImageSource;
+          if (img && img.includes('gradient')) { credit.style.setProperty('--credit-line', img); break; }
+        }
+      }
+      matchHeading();
+      new MutationObserver(matchHeading).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class', 'style'] });
+    })();
+  </script>
+  <script>
+    // Show the credit only while Semester 1 or 2 is being viewed.
+    (function () {
+      const label = document.getElementById('semesterLabel');
+      const credit = document.getElementById('notesCredit');
+      if (!label || !credit) return;
+      function sync() {
+        const m = /semester\s+(\d+)/i.exec(label.textContent || '');
+        const sem = m ? Number(m[1]) : null;
+        credit.style.display = (sem === 1 || sem === 2) ? 'block' : 'none';
+      }
+      new MutationObserver(sync).observe(label, { childList: true, characterData: true, subtree: true });
+      sync();
+    })();
+  </script>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/theme.js"></script>
+<script src="js/ui-helpers.js"></script>
+<script src="js/nav.js"></script>
+<script src="js/back-to-top.js"></script>
+<script src="js/streak.js"></script>
+<script>
+let currentUser;
+let activeTypeFilter = null;
+let allBookmarks = [];
+let bookmarksExpanded = false;
+
+(async () => {
+  currentUser = await requireSession();
+  if (!currentUser) return;
+  renderNav('resource', currentUser);
+  renderStreakBadge('streakBadge');
+
+  const spotlightZone = document.getElementById('spotlightZone');
+  const cursorSpotlight = document.getElementById('cursorSpotlight');
+  if (spotlightZone && cursorSpotlight) {
+    spotlightZone.addEventListener('mousemove', (e) => {
+      const rect = spotlightZone.getBoundingClientRect();
+      cursorSpotlight.style.left = `${e.clientX - rect.left}px`;
+      cursorSpotlight.style.top = `${e.clientY - rect.top}px`;
+      cursorSpotlight.style.opacity = '1';
+    });
+    spotlightZone.addEventListener('mouseleave', () => { cursorSpotlight.style.opacity = '0'; });
+  }
+
+  const savedSemester = sessionStorage.getItem('mv_viewSemester');
+  const initialSemester = savedSemester || String(currentUser.semester || 3);
+  document.getElementById('semesterSwitch').value = initialSemester;
+
+  document.getElementById('semesterSwitch').addEventListener('change', (e) => {
+    sessionStorage.setItem('mv_viewSemester', e.target.value);
+    activeTypeFilter = null;
+    document.getElementById('typeFilterResults').classList.add('hidden');
+    loadSubjects(e.target.value);
+    loadTypeCounts(e.target.value);
+  });
+
+  await loadSubjects(initialSemester);
+  await loadTypeCounts(initialSemester);
+
+  const { recent } = await api('/resource-hub/recently-viewed');
+  renderRecentList(recent);
+
+  const { bookmarks } = await api('/resource-hub/bookmarks');
+  allBookmarks = bookmarks;
+  renderBookmarkList();
+
+  const searchInput = document.getElementById('searchInput');
+  let t;
+  searchInput.addEventListener('input', () => {
+    clearTimeout(t);
+    t = setTimeout(async () => {
+      const q = searchInput.value.trim();
+      const box = document.getElementById('searchResults');
+      if (!q) { box.classList.add('hidden'); return; }
+      const { results } = await api(`/resource-hub/search?q=${encodeURIComponent(q)}`);
+      box.classList.remove('hidden');
+      box.innerHTML = results.length
+        ? results.map(resourceRowHTML).join('')
+        : `<p class="muted" style="margin:0;">No matches for "${q}".</p>`;
+      wireResourceRowClicks(box);
+    }, 250);
+  });
+})();
+
+async function loadSubjects(semester) {
+  document.getElementById('semesterLabel').textContent = `${currentUser.branch || 'Mechanical Engineering'} · Viewing semester ${semester}`;
+  const grid = document.getElementById('subjectGrid');
+  grid.innerHTML = Array.from({ length: 6 }).map(() => `
+    <div class="skeleton-card">
+      <div class="skeleton-line" style="width:40%; height:26px;"></div>
+      <div class="skeleton-line" style="width:70%;"></div>
+      <div class="skeleton-line" style="width:50%;"></div>
+    </div>`).join('');
+  const { subjects } = await api(`/resource-hub/subjects?semester=${semester}`);
+  grid.innerHTML = subjects.length ? subjects.map((s, i) => subjectCard(s, i)).join('') : emptyStateHTML('books', 'No subjects yet', `Nothing's added for semester ${semester} yet. If you uploaded content, double-check the semester via Admin → "Everything I've uploaded".`);
+  wireSubjectCardClicks();
+  requestAnimationFrame(() => {
+    document.querySelectorAll('.progress-ring .fill').forEach(el => {
+      el.style.strokeDashoffset = el.dataset.offset;
+      const pctEl = el.closest('.progress-ring')?.querySelector('.pct');
+      animateCountUp(pctEl, Number(el.dataset.pct), 700);
+    });
+  });
+  watchForCelebrations();
+}
+
+function animateCountUp(el, target, duration) {
+  if (!el) return;
+  const start = performance.now();
+  function tick(now) {
+    const t = Math.min(1, (now - start) / duration);
+    const eased = 1 - Math.pow(1 - t, 3);
+    el.textContent = `${Math.round(eased * target)}%`;
+    if (t < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+// Celebrates a subject only the moment its card actually scrolls into
+// view (not immediately on page load while off-screen) -- and still only
+// ever once per subject, via the same localStorage flag as before.
+function watchForCelebrations() {
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      const card = entry.target;
+      const fill = card.querySelector('.progress-ring .fill');
+      const pct = Number(fill?.dataset.pct);
+      if (pct >= 100) maybeCelebrate(card.dataset.subjectId, card);
+      observer.unobserve(card);
+    });
+  }, { threshold: 0.6 });
+
+  document.querySelectorAll('.subject-card').forEach(card => observer.observe(card));
+}
+
+// Fires a small one-time confetti burst the first time a subject reaches
+// 100% -- tracked in localStorage so it never replays on later visits.
+function maybeCelebrate(subjectId, cardEl) {
+  const colors = ['#ff4f82', '#2f8f7a', '#ffb84f', '#8a5cb0', '#2f6690'];
+  const ring = cardEl.querySelector('.progress-ring');
+  const PIECE_COUNT = 28;
+  for (let i = 0; i < PIECE_COUNT; i++) {
+    const piece = document.createElement('span');
+    piece.className = 'confetti-piece';
+    const size = 4 + Math.random() * 5;
+    piece.style.width = `${size}px`;
+    piece.style.height = `${size * (Math.random() > 0.5 ? 1 : 0.5)}px`;
+    piece.style.borderRadius = Math.random() > 0.6 ? '50%' : '2px';
+    piece.style.background = colors[i % colors.length];
+    piece.style.left = `${50 + (Math.random() - 0.5) * 20}%`;
+    piece.style.top = `${50 + (Math.random() - 0.5) * 20}%`;
+    piece.style.setProperty('--dx', `${(Math.random() - 0.5) * 110}px`);
+    piece.style.setProperty('--dy', `${-(40 + Math.random() * 50)}px`);
+    piece.style.animationDelay = `${Math.random() * 0.2}s`;
+    piece.style.animationDuration = `${1.6 + Math.random() * 0.6}s`;
+    ring.appendChild(piece);
+    setTimeout(() => piece.remove(), 2400);
+  }
+}
+
+const SUBJECT_ACCENTS = ['#2f6690', '#e0982f', '#3f8f5f', '#8a5cb0', '#c4463a', '#1f9099'];
+
+function subjectStatus(pct) {
+  if (pct >= 60) return { cls: 'status-on_track', label: 'On track' };
+  if (pct > 0) return { cls: 'status-needs_attention', label: 'Needs attention' };
+  return { cls: 'status-not_started', label: 'Not started' };
+}
+
+function subjectCard(s, index) {
+  const pct = s.progress_percent;
+  const r = 24;
+  const c = 2 * Math.PI * r;
+  const offset = c - (pct / 100) * c;
+  const accent = SUBJECT_ACCENTS[index % SUBJECT_ACCENTS.length];
+  const status = subjectStatus(pct);
+  const ringClass = pct >= 80 ? 'ring-high' : pct >= 40 ? 'ring-mid' : 'ring-low';
+  return `<div class="card bracket subject-card reveal-init" data-subject-id="${s.id}" style="cursor:pointer; text-align:center; --accent:${accent}; --reveal-delay:${index * 70}ms;">
+    <span class="shine"></span>
+    <span class="status-pill ${status.cls} card-status-badge">${status.label}</span>
+    <div class="icon-wrap">
+      <span class="icon-blob"></span>
+      <div class="icon">${s.icon}</div>
+    </div>
+    <h3>${s.name}</h3>
+    <div class="progress-ring" style="position:relative;">
+      <svg viewBox="0 0 56 56">
+        <circle class="track" cx="28" cy="28" r="${r}"></circle>
+        <circle class="fill ${ringClass}" cx="28" cy="28" r="${r}" stroke-dasharray="${c}" stroke-dashoffset="${c}" data-offset="${offset}" data-pct="${pct}"></circle>
+      </svg>
+      <span class="pct">0%</span>
+    </div>
+    <div class="progress-label ${pct >= 80 && pct < 100 ? 'nudge-almost' : ''}" style="justify-content:center;"><span>${progressLabelText(pct)}</span></div>
+    <div class="quick-action">Continue →</div>
+  </div>`;
+}
+
+function progressLabelText(pct) {
+  if (pct >= 100) return '✓ Completed';
+  if (pct >= 80) return `🔥 Almost there — ${100 - pct}% left`;
+  return 'Continue →';
+}
+
+function wireSubjectCardClicks() {
+  document.querySelectorAll('[data-subject-id]').forEach(card => {
+    card.addEventListener('click', () => {
+      const id = card.getAttribute('data-subject-id');
+      goToPage('subject.html', 'mv_subjectId', id);
+    });
+    wireCardTilt(card);
+  });
+}
+
+function wireCardTilt(card) {
+  const maxTilt = 6;
+  card.addEventListener('mousemove', (e) => {
+    const rect = card.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width - 0.5;
+    const y = (e.clientY - rect.top) / rect.height - 0.5;
+    card.style.transform = `perspective(600px) rotateX(${(-y * maxTilt).toFixed(2)}deg) rotateY(${(x * maxTilt).toFixed(2)}deg) translateY(-4px)`;
+  });
+  card.addEventListener('mouseleave', () => {
+    card.style.transform = '';
+  });
+}
+function resourceIcon(type) {
+  return { note: '📄', video: '📺', pyq: '📚', practice: '📝', book: '📖', important_topic: '⭐' }[type] || '📎';
+}
+
+function renderRecentList(recent) {
+  const el = document.getElementById('recentList');
+  el.innerHTML = recent.length
+    ? recent.map(r => `
+        <div class="hub-row recent-item" data-type="${r.type}" data-id="${r.id}">
+          <span class="hub-row-icon">${r.type === 'unit' ? '📘' : '📚'}</span>
+          <div class="hub-row-text">
+            <span class="hub-row-title">${r.title || r.subject_name}</span>
+            <span class="hub-row-sub">${r.subject_name}</span>
+          </div>
+        </div>`).join('')
+    : `<p class="muted">Nothing viewed yet, open a subject to get started.</p>`;
+  el.querySelectorAll('.recent-item').forEach(row => row.addEventListener('click', () => {
+    if (row.dataset.type === 'unit') goToPage('unit.html', 'mv_unitId', row.dataset.id);
+    else goToPage('subject.html', 'mv_subjectId', row.dataset.id);
+  }));
+}
+
+function renderBookmarkList() {
+  const el = document.getElementById('bookmarkList');
+  if (!allBookmarks.length) {
+    el.innerHTML = `<p class="muted">Save resources with the star icon to find them here later.</p>`;
+    return;
+  }
+  const shown = bookmarksExpanded ? allBookmarks : allBookmarks.slice(0, 5);
+  el.innerHTML = shown.map(b => `
+      <div class="hub-row bookmark-item" data-id="${b.id}" data-unit-id="${b.unit_id || ''}" data-url="${b.url || ''}">
+        <span class="hub-row-icon">${resourceIcon(b.type)}</span>
+        <div class="hub-row-text">
+          <span class="hub-row-title">${b.title}</span>
+          <span class="hub-row-sub">${b.subject_name || b.unit_title || ''}</span>
+        </div>
+        <button class="hub-row-unstar" data-unstar-id="${b.id}" title="Remove bookmark">★</button>
+      </div>`).join('')
+    + (allBookmarks.length > 5
+        ? `<button class="hub-see-all" id="bookmarksSeeAll">${bookmarksExpanded ? 'Show less' : `See all ${allBookmarks.length} →`}</button>`
+        : '');
+
+  el.querySelectorAll('.bookmark-item').forEach(row => row.addEventListener('click', (e) => {
+    if (e.target.closest('.hub-row-unstar')) return;
+    if (row.dataset.unitId) goToPage('unit.html', 'mv_unitId', row.dataset.unitId);
+    else if (row.dataset.url) window.open(row.dataset.url, '_blank');
+  }));
+
+  el.querySelectorAll('.hub-row-unstar').forEach(btn => btn.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    const id = btn.dataset.unstarId;
+    await api(`/resource-hub/resources/${id}/bookmark`, { method: 'POST' });
+    allBookmarks = allBookmarks.filter(b => String(b.id) !== String(id));
+    renderBookmarkList();
+  }));
+
+  const seeAllBtn = document.getElementById('bookmarksSeeAll');
+  if (seeAllBtn) seeAllBtn.addEventListener('click', () => {
+    bookmarksExpanded = !bookmarksExpanded;
+    renderBookmarkList();
+  });
+}
+async function loadTypeCounts(semester) {
+  const strip = document.getElementById('typeCountStrip');
+  const { counts } = await api(`/resource-hub/type-counts?semester=${semester}`);
+  const labels = { note: 'Notes', video: 'Videos', pyq: 'PYQs', practice: 'Practice', book: 'Books', important_topic: 'Key topics' };
+  const entries = Object.entries(counts).filter(([, c]) => c > 0);
+  strip.innerHTML = entries.length
+    ? entries.map(([type, count]) => `
+        <div class="type-count-pill" data-type="${type}">
+          <span class="bar"></span>
+          ${resourceIcon(type)} ${labels[type] || type} <span class="num">${count}</span>
+        </div>`).join('')
+    : '';
+  strip.querySelectorAll('.type-count-pill').forEach(pill => {
+    pill.addEventListener('click', () => toggleTypeFilter(pill.dataset.type, semester));
+  });
+}
+
+async function toggleTypeFilter(type, semester) {
+  const strip = document.getElementById('typeCountStrip');
+  const resultsBox = document.getElementById('typeFilterResults');
+
+  if (activeTypeFilter === type) {
+    activeTypeFilter = null;
+    resultsBox.classList.add('hidden');
+    strip.querySelectorAll('.type-count-pill').forEach(p => p.classList.remove('active'));
+    return;
+  }
+
+  activeTypeFilter = type;
+  strip.querySelectorAll('.type-count-pill').forEach(p => p.classList.toggle('active', p.dataset.type === type));
+
+  resultsBox.classList.remove('hidden');
+  resultsBox.innerHTML = `<p class="muted">Loading…</p>`;
+  const { results } = await api(`/resource-hub/by-type?semester=${semester}&type=${encodeURIComponent(type)}`);
+  resultsBox.innerHTML = results.length
+    ? results.map(resourceRowHTML).join('')
+    : `<p class="muted">Nothing here yet.</p>`;
+  wireResourceRowClicks(resultsBox);
+}
+
+// Shared row markup for both the search dropdown and the type-filter list.
+// data-url/data-unit-id carry what's needed to actually open the resource
+// on click -- these rows used to render as static text with nowhere to go.
+function resourceRowHTML(r) {
+  const hint = r.type === 'video' ? 'Watch →' : (r.url ? 'Download →' : 'View unit →');
+  return `<div class="resource-row clickable" data-url="${r.url || ''}" data-unit-id="${r.unit_id || ''}">
+    <div class="left">${resourceIcon(r.type)} <div><strong>${r.title}</strong><div class="meta">${r.subject_name} · ${r.unit_title}</div></div></div>
+    <span class="open-hint">${hint}</span>
+  </div>`;
+}
+
+// A resource with an uploaded/linked file opens (and can be downloaded)
+// directly; one with no file yet (e.g. a note not uploaded) falls back to
+// the unit page where it lives.
+function wireResourceRowClicks(container) {
+  container.querySelectorAll('.resource-row.clickable').forEach(row => {
+    row.addEventListener('click', () => {
+      const url = row.dataset.url;
+      const unitId = row.dataset.unitId;
+      if (url) window.open(resolveFileUrl(url), '_blank');
+      else if (unitId) goToPage('unit.html', 'mv_unitId', unitId);
+    });
+  });
+}
+</script>
+</body>
+</html>

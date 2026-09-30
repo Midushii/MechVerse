@@ -1,0 +1,27 @@
+@"
+# secrets
+.env
+.env.*
+backend/.env
+
+# databases and data
+backend/data/
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+drive-files.csv
+link-report.txt
+
+# dependencies and build
+node_modules/
+.vercel/
+npm-debug.log*
+
+# archives
+tools/
+*.zip
+*.log
+Thumbs.db
+backend/uploads/
+"@ | Set-Content .gitignore

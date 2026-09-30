@@ -1,0 +1,7 @@
+{
+  "outputDirectory": "frontend",
+  "regions": ["sin1"],
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api" }
+  ]
+}

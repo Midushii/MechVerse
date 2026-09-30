@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MechVerse — Subject</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<div class="bg-fx" aria-hidden="true">
+  <span class="bg-blob bg-blob-1"></span>
+  <span class="bg-blob bg-blob-2"></span>
+  <span class="bg-blob bg-blob-3"></span>
+  <span class="bg-icon bg-icon-1">⚙️</span>
+  <span class="bg-icon bg-icon-2">📐</span>
+  <span class="bg-icon bg-icon-3">🔧</span>
+  <span class="bg-icon bg-icon-4">🛠️</span>
+</div>
+<div id="topbar-root"></div>
+<div class="container">
+  <div id="breadcrumbRoot" class="breadcrumb"></div>
+  <a href="dashboard.html" class="muted" style="text-decoration:none;">← Back to dashboard</a>
+  <div id="errorBox" class="alert alert-error hidden"></div>
+  <div class="card bracket" style="margin:16px 0 28px;">
+    <h2 id="subjectName"></h2>
+    <div class="progress-bar"><span id="subjectBar" style="width:0%"></span></div>
+    <div class="progress-label"><span id="subjectPercent">0% complete</span></div>
+  </div>
+  <h3>Study roadmap</h3>
+  <div id="unitList"></div>
+</div>
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/theme.js"></script>
+<script src="js/ui-helpers.js"></script>
+<script src="js/nav.js"></script>
+<script src="js/back-to-top.js"></script>
+<script>
+(async () => {
+  console.log('[MechVerse] subject.html loaded with URL:', window.location.href, '| search:', window.location.search);
+  const user = await requireSession();
+  if (!user) return;
+  renderNav('resource', user);
+
+  const subjectId = getPageId('mv_subjectId');
+  if (!subjectId) {
+    await showSubjectPicker(user, 'No subject was specified — pick one below to continue.');
+    return;
+  }
+
+  let subject, units;
+  try {
+    ({ subject, units } = await api(`/resource-hub/subjects/${subjectId}`));
+  } catch (err) {
+    await showSubjectPicker(user, `Couldn't load subject id ${subjectId} (${err.message}). Pick a subject below instead.`);
+    return;
+  }
+
+  document.getElementById('subjectName').textContent = `${subject.icon} ${subject.name}`;
+  renderBreadcrumbs('breadcrumbRoot', [
+    { label: 'Resource Hub', href: 'dashboard.html' },
+    { label: subject.name },
+  ]);
+  const overall = units.length ? Math.round(units.reduce((s,u)=>s+u.progress_percent,0)/units.length) : 0;
+  document.getElementById('subjectBar').style.width = overall + '%';
+  document.getElementById('subjectPercent').textContent = overall + '% complete';
+
+  const UNIT_ACCENTS = ['#2f6690', '#e0982f', '#3f8f5f', '#8a5cb0', '#c4463a', '#1f9099'];
+  document.getElementById('unitList').innerHTML = units.length ? units.map((u, i) => `
+    <div class="card unit-card" data-unit-id="${u.id}" style="--u-accent:${UNIT_ACCENTS[i % UNIT_ACCENTS.length]};">
+      <span class="shine"></span>
+      <span class="unit-icon-blob">${u.progress_percent === 100 ? '✅' : '⬜'}</span>
+      <div class="unit-card-text">
+        <strong>${u.title}</strong>
+        <div class="unit-progress-bar"><span style="width:${u.progress_percent}%"></span></div>
+      </div>
+      <div class="mono muted unit-pct">${u.progress_percent}%</div>
+    </div>`).join('') : `<div class="empty-state">No units added yet for this subject.</div>`;
+
+  document.querySelectorAll('[data-unit-id]').forEach(el => el.addEventListener('click', () => {
+    goToPage('unit.html', 'mv_unitId', el.getAttribute('data-unit-id'));
+  }));
+})();
+
+async function showSubjectPicker(user, message) {
+  const errorBox = document.getElementById('errorBox');
+  showError(errorBox, message);
+
+  const semester = sessionStorage.getItem('mv_viewSemester') || String(user.semester || 3);
+  document.querySelector('h3').textContent = `Or pick a subject (semester ${semester}):`;
+
+  try {
+    const { subjects } = await api(`/resource-hub/subjects?semester=${semester}`);
+    document.getElementById('unitList').innerHTML = subjects.length
+      ? subjects.map(s => `
+        <div class="card resource-row" data-subject-id="${s.id}" style="cursor:pointer; align-items:center;">
+          <div class="left"><span>${s.icon}</span><div><strong>${s.name}</strong></div></div>
+          <div class="mono muted">${s.progress_percent}%</div>
+        </div>`).join('')
+      : `<div class="empty-state">No subjects found for semester ${semester}. Try a different semester from the dashboard, or check Admin → "Everything I've uploaded".</div>`;
+    document.querySelectorAll('[data-subject-id]').forEach(el => el.addEventListener('click', () => {
+      goToPage('subject.html', 'mv_subjectId', el.getAttribute('data-subject-id'));
+    }));
+  } catch (err) {
+    document.getElementById('unitList').innerHTML = `<div class="empty-state">Couldn't load subjects either (${err.message}). Check that your backend server is running.</div>`;
+  }
+}
+</script>
+</body>
+</html>

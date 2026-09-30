@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MechVerse — SGPA Calculator</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<div class="bg-fx" aria-hidden="true">
+  <span class="bg-blob bg-blob-1"></span>
+  <span class="bg-blob bg-blob-2"></span>
+  <span class="bg-blob bg-blob-3"></span>
+  <span class="bg-icon bg-icon-1">⚙️</span>
+  <span class="bg-icon bg-icon-2">📐</span>
+  <span class="bg-icon bg-icon-3">🔧</span>
+  <span class="bg-icon bg-icon-4">🛠️</span>
+</div>
+<div id="topbar-root"></div>
+<div class="container">
+  <h2><span class="sgpa-title-icon" aria-hidden="true">🎓</span> SGPA <span class="sgpa-title-accent">Calculator</span></h2>
+  <p>Select Your Semester, Enter Your Marks, And Calculate Your SGPA!</p>
+
+  <div class="card bracket sgpa-card">
+    <div class="field" style="max-width:260px;">
+      <label><span class="sgpa-label-icon" aria-hidden="true">📅</span> Semester</label>
+      <select id="semesterSelect">
+        <option value="">Select semester</option>
+        <option value="1">Semester 1</option>
+        <option value="2">Semester 2</option>
+      </select>
+    </div>
+
+    <div id="errorBox" class="alert alert-error hidden" style="margin-top:12px;"></div>
+
+    <div class="sgpa-table-wrap">
+      <table class="sgpa-table" id="sgpaTable">
+        <thead>
+          <tr>
+            <th><span aria-hidden="true">📖</span> Subject Name</th>
+            <th><span aria-hidden="true"></span> Marks (0–100)</th>
+            <th><span aria-hidden="true">⭐</span> Credits</th>
+            <th><span aria-hidden="true">📊</span> Grade</th>
+            <th><span aria-hidden="true">🏆</span> Grade Point</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="subjectRows"></tbody>
+      </table>
+    </div>
+    <button class="sgpa-add-btn" id="addRowBtn" type="button">+ Add subject</button>
+    <div class="divider"></div>
+    <button class="btn sgpa-calc-btn" id="calcBtn" type="button">Calculate SGPA <span aria-hidden="true">→</span></button>
+  </div>
+
+  <div class="card bracket hidden" id="resultCard" style="margin-top:16px;">
+    <div class="stat-block"><div class="num" id="sgpaResult">–</div><div class="lbl">Your SGPA</div></div>
+  </div>
+
+  <div class="card bracket sgpa-card sgpa-info-card" id="gradeCardWrap" style="margin-top:24px;">
+    <div class="sgpa-card-header">
+      <div class="sgpa-card-header-left">
+        <span class="sgpa-icon-badge" aria-hidden="true">📋</span>
+        <div>
+          <h3>Grading Regulation</h3>
+          <p class="muted sgpa-card-subtitle">Marks range, letter grade and grade point mapping as per university norms.</p>
+        </div>
+      </div>
+      <button class="sgpa-toggle-btn" id="gradeToggleBtn" type="button" aria-expanded="true" aria-controls="gradeTableCard" title="Collapse / expand">
+        <span class="sgpa-toggle-icon" aria-hidden="true">▾</span>
+      </button>
+    </div>
+    <div class="sgpa-card-body" id="gradeTableCard"></div>
+  </div>
+
+  <div class="card bracket sgpa-card sgpa-info-card" id="formulaCardWrap" style="margin-top:16px;">
+    <div class="sgpa-card-header">
+      <div class="sgpa-card-header-left">
+        <span class="sgpa-icon-badge" aria-hidden="true">🧮</span>
+        <div>
+          <h3>SGPA Calculation Formula</h3>
+          <p class="muted sgpa-card-subtitle">SGPA is calculated as the weighted average of the grade points, where each grade point is multiplied according to the credits of that subject.</p>
+        </div>
+      </div>
+      <button class="sgpa-toggle-btn" id="formulaToggleBtn" type="button" aria-expanded="true" aria-controls="formulaBody" title="Collapse / expand">
+        <span class="sgpa-toggle-icon" aria-hidden="true">▾</span>
+      </button>
+    </div>
+    <div class="sgpa-card-body" id="formulaBody">
+      <div class="sgpa-formula-box">
+        <span class="sgpa-formula-tag">SGPA</span>
+        <span class="sgpa-formula-eq">= Σ(Credit × Grade Point) / Σ(Credit)</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/ui-helpers.js"></script>
+<script src="js/nav.js"></script>
+<script src="js/theme.js"></script>
+<script src="js/sgpa.js"></script>
+<script src="js/back-to-top.js"></script>
+<script>
+(async () => {
+  const user = await requireSession();
+  if (!user) return;
+  renderNav('sgpa', user);
+  initSgpaCalculator();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MechVerse — Admin: Add Content</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<div id="topbar-root"></div>
+<div class="container">
+  <h2>Add Content</h2>
+  <p>This page writes straight into the site's database — nothing you add here needs Google Drive or any extra step. Fill a form, submit, and it appears live on the site (a refresh on the student side will show it).</p>
+
+  <div id="notAdminBox" class="alert alert-error hidden">Your account isn't an admin, so you can't add content. Add your email to <span class="mono">ADMIN_EMAILS</span> in the backend's <span class="mono">.env</span> and sign up again (or ask whoever set that up).</div>
+
+  <div id="adminBody" class="hidden">
+    <div class="field" style="max-width:200px;">
+      <label>Working semester</label>
+      <select id="semesterFilter">
+        <option>1</option><option>2</option><option selected>3</option><option>4</option>
+        <option>5</option><option>6</option><option>7</option><option>8</option>
+      </select>
+    </div>
+
+    <div id="tabs" style="display:flex; gap:6px; margin:20px 0;">
+      <button class="btn btn-outline" data-tab="resourceHub">Resource Hub</button>
+      <button class="btn btn-outline" data-tab="labCompanion">Lab Companion</button>
+      <button class="btn btn-outline" data-tab="manage">📋 Everything I've uploaded</button>
+    </div>
+
+    <!-- ============ RESOURCE HUB ============ -->
+    <div id="resourceHub" class="tab-panel">
+      <div class="card bracket" style="margin-bottom:20px;">
+        <h3>1. Add a subject</h3>
+        <p class="muted">A subject is what shows up as a card on the student dashboard, e.g. "Engineering Mechanics".</p>
+        <form id="subjectForm">
+          <div class="grid cols-3">
+            <div class="field"><label>Subject name</label><input type="text" id="subjectName" required /></div>
+            <div class="field"><label>Icon (any emoji)</label><input type="text" id="subjectIcon" value="📘" maxlength="4" /></div>
+            <div class="field" style="display:flex; align-items:flex-end;"><button class="btn btn-primary btn-block" type="submit">Add subject</button></div>
+          </div>
+        </form>
+      </div>
+
+      <div class="card bracket" style="margin-bottom:20px;">
+        <h3>2. Add a unit to a subject</h3>
+        <p class="muted">A unit is a chapter inside a subject, e.g. "Unit 1: Force Systems". Every note/video/PYQ you upload belongs to a unit.</p>
+        <form id="unitForm">
+          <div class="grid cols-3">
+            <div class="field"><label>Subject</label><select id="unitSubjectId" required></select></div>
+            <div class="field"><label>Unit title</label><input type="text" id="unitTitle" required /></div>
+            <div class="field"><label>Order (1, 2, 3...)</label><input type="number" id="unitOrder" value="1" min="1" /></div>
+          </div>
+          <div id="unitTargetLabel" class="alert" style="background:var(--primary-tint); color:var(--primary-dark); margin-bottom:14px;"></div>
+          <button class="btn btn-primary" type="submit">Add unit</button>
+        </form>
+      </div>
+
+      <div class="card bracket">
+        <h3>3. Add a resource (note / video / PYQ / practice question / book / important topic)</h3>
+        <p class="muted">This is the actual material. Paste a link to the material: a Google Drive share link (Anyone with the link → Viewer) or a YouTube URL.</p>
+        <form id="resourceForm">
+          <div class="grid cols-3">
+            <div class="field"><label>Unit</label><select id="resourceUnitId" required></select></div>
+            <div class="field"><label>Type</label>
+              <select id="resourceType">
+                <option value="note">📄 Note</option>
+                <option value="video">📺 Video</option>
+                <option value="pyq">📚 PYQ</option>
+                <option value="practice">📝 Practice question</option>
+                <option value="book">📖 Reference book</option>
+                <option value="important_topic">⭐ Important topic</option>
+              </select>
+            </div>
+            <div class="field"><label>Title</label><input type="text" id="resourceTitle" required /></div>
+          </div>
+          <div id="resourceTargetLabel" class="alert" style="background:var(--primary-tint); color:var(--primary-dark); margin-bottom:14px;"></div>
+          <div class="grid cols-3">
+            <div class="field" id="difficultyField"><label>Difficulty (practice questions only)</label>
+              <select id="resourceDifficulty"><option value="">—</option><option value="basic">Basic</option><option value="medium">Medium</option><option value="exam_level">Exam level</option></select>
+            </div>
+            <div class="field" id="yearField"><label>Exam label (PYQs only, e.g. "2025 Midsem")</label><input type="text" id="resourceYear" /></div>
+            <div class="field"><label>Link (Google Drive or YouTube)</label><input type="url" id="resourceUrl" placeholder="https://..." /></div>
+          </div>
+          <input type="file" id="resourceFile" hidden />
+          <button class="btn btn-primary" type="submit">Add resource</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ============ LAB COMPANION ============ -->
+    <div id="labCompanion" class="tab-panel hidden">
+      <div class="card bracket" style="margin-bottom:20px;">
+        <h3>1. Add a lab</h3>
+        <p class="muted">A lab shows up as a card on the student Lab Companion page, e.g. "EVS lab".</p>
+        <form id="labForm">
+          <div class="grid cols-3">
+            <div class="field"><label>Lab name</label><input type="text" id="labName" required placeholder="e.g. CAD Lab" /></div>
+            <div class="field"><label>Icon (any emoji)</label><input type="text" id="labIcon" value="🧪" maxlength="4" /></div>
+            <div class="field" style="display:flex; align-items:flex-end;"><button class="btn btn-primary btn-block" type="submit">Add lab</button></div>
+          </div>
+        </form>
+      </div>
+
+      <div class="card bracket">
+        <h3>2. Add a file to a lab</h3>
+        <p class="muted">Same idea as Resource Hub: paste a Google Drive share link or a YouTube URL. Just one field per file — no objective/procedure/viva sections.</p>
+        <form id="labFileForm">
+          <div class="grid cols-2">
+            <div class="field"><label>Lab</label><select id="labFileLabId" required></select></div>
+            <div class="field"><label>Title</label><input type="text" id="labFileTitle" required /></div>
+          </div>
+          <div id="labFileTargetLabel" class="alert" style="background:var(--primary-tint); color:var(--primary-dark); margin-bottom:14px;"></div>
+          <div class="field"><label>Link (Google Drive or YouTube)</label><input type="url" id="labFileUrl" placeholder="https://..." /></div>
+          <input type="file" id="labFileFile" hidden />
+          <button class="btn btn-primary" type="submit">Add file</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ============ MANAGE / OVERVIEW ============ -->
+    <div id="manage" class="tab-panel hidden">
+      <p class="muted">This shows everything across <strong>every semester</strong>, not just the one selected above — if something you uploaded is "missing" from the student site, check here first: it's almost always sitting under a different semester than your own account.</p>
+
+      <h3>Resource Hub content</h3>
+      <div id="manageSubjects"></div>
+
+      <h3 style="margin-top:32px;">Lab Companion content</h3>
+      <div id="manageLabs"></div>
+    </div>
+  </div>
+
+  <div id="toast" class="alert hidden" style="position:fixed; bottom:24px; right:24px; max-width:320px; box-shadow:var(--shadow);"></div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/theme.js"></script>
+<script src="js/ui-helpers.js"></script>
+<script src="js/nav.js"></script>
+<script src="js/back-to-top.js"></script>
+<script>
+let user;
+(async () => {
+  user = await requireSession();
+  if (!user) return;
+  renderNav('admin', user);
+
+  if (user.role !== 'admin') {
+    document.getElementById('notAdminBox').classList.remove('hidden');
+    return;
+  }
+  document.getElementById('adminBody').classList.remove('hidden');
+
+  document.querySelectorAll('[data-tab]').forEach(btn => btn.onclick = () => switchTab(btn.dataset.tab));
+  switchTab('resourceHub');
+
+  document.getElementById('semesterFilter').addEventListener('change', () => refreshSelects());
+  document.getElementById('resourceType').addEventListener('change', toggleTypeFields);
+  document.getElementById('unitSubjectId').addEventListener('change', updateUnitTargetLabel);
+  document.getElementById('resourceUnitId').addEventListener('change', updateResourceTargetLabel);
+  document.getElementById('labFileLabId').addEventListener('change', updateLabFileTargetLabel);
+  toggleTypeFields();
+  await refreshSelects();
+
+  document.getElementById('subjectForm').addEventListener('submit', onAddSubject);
+  document.getElementById('unitForm').addEventListener('submit', onAddUnit);
+  document.getElementById('resourceForm').addEventListener('submit', onAddResource);
+  document.getElementById('labForm').addEventListener('submit', onAddLab);
+  document.getElementById('labFileForm').addEventListener('submit', onAddLabFile);
+})();
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+  document.getElementById(tab).classList.remove('hidden');
+  document.querySelectorAll('[data-tab]').forEach(b => b.classList.toggle('btn-primary', b.dataset.tab === tab));
+  if (tab === 'manage') loadManageContent();
+}
+
+function toggleTypeFields() {
+  const type = document.getElementById('resourceType').value;
+  document.getElementById('difficultyField').style.display = type === 'practice' ? '' : 'none';
+  document.getElementById('yearField').style.display = type === 'pyq' ? '' : 'none';
+}
+
+function toast(message, isError) {
+  const el = document.getElementById('toast');
+  el.className = `alert ${isError ? 'alert-error' : 'alert-success'}`;
+  el.textContent = message;
+  el.classList.remove('hidden');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => el.classList.add('hidden'), 3500);
+}
+
+// ---- Load select dropdowns for the chosen semester ----
+let lastSubjects = [];
+let lastUnitOptions = [];
+let lastLabs = [];
+
+async function refreshSelects(selectSubjectId, selectUnitId, selectLabId) {
+  const semester = document.getElementById('semesterFilter').value;
+
+  const { subjects } = await api(`/resource-hub/subjects?semester=${semester}`);
+  lastSubjects = subjects;
+  fillSelect('unitSubjectId', subjects.map(s => [s.id, `${s.icon} ${s.name}`]), selectSubjectId);
+
+  // Units for the resource form: pull units for every subject in this semester.
+  const unitOptions = [];
+  for (const s of subjects) {
+    const { units } = await api(`/resource-hub/subjects/${s.id}`);
+    for (const u of units) unitOptions.push([u.id, `${s.name} → ${u.title}`, s.name, u.title]);
+  }
+  lastUnitOptions = unitOptions;
+  fillSelect('resourceUnitId', unitOptions, selectUnitId);
+
+  const { labs } = await api(`/lab-companion/labs?semester=${semester}`);
+  lastLabs = labs;
+  fillSelect('labFileLabId', labs.map(l => [l.id, `${l.icon || '🧪'} ${l.name}`]), selectLabId);
+
+  updateUnitTargetLabel();
+  updateResourceTargetLabel();
+  updateLabFileTargetLabel();
+}
+
+function updateLabFileTargetLabel() {
+  const el = document.getElementById('labFileTargetLabel');
+  const id = document.getElementById('labFileLabId').value;
+  const lab = lastLabs.find(l => String(l.id) === id);
+  el.textContent = lab
+    ? `Adding this file to: ${lab.icon || '🧪'} ${lab.name} (Semester ${lab.semester})`
+    : `No lab selected — pick one above, or add a lab first.`;
+}
+
+function updateUnitTargetLabel() {
+  const el = document.getElementById('unitTargetLabel');
+  const id = document.getElementById('unitSubjectId').value;
+  const subject = lastSubjects.find(s => String(s.id) === id);
+  el.textContent = subject
+    ? `Adding this unit to: ${subject.icon} ${subject.name} (Semester ${subject.semester})`
+    : `No subject selected — pick one above, or add a subject first.`;
+}
+
+function updateResourceTargetLabel() {
+  const el = document.getElementById('resourceTargetLabel');
+  const id = document.getElementById('resourceUnitId').value;
+  const match = lastUnitOptions.find(([v]) => String(v) === id);
+  el.textContent = match
+    ? `Adding this resource to: ${match[2]} → ${match[3]}`
+    : `No unit selected — pick one above, or add a unit first.`;
+}
+
+function fillSelect(id, pairs, forceSelectId) {
+  const el = document.getElementById(id);
+  const current = forceSelectId != null ? String(forceSelectId) : el.value;
+  el.innerHTML = pairs.length ? pairs.map(([v, label]) => `<option value="${v}">${label}</option>`).join('') : `<option value="">— none yet, add one above —</option>`;
+  if (pairs.some(([v]) => String(v) === current)) el.value = current;
+}
+
+// ---- Form handlers ----
+async function onAddSubject(e) {
+  e.preventDefault();
+  try {
+    const { id } = await api('/resource-hub/subjects', { method: 'POST', body: {
+      name: document.getElementById('subjectName').value,
+      semester: Number(document.getElementById('semesterFilter').value),
+      icon: document.getElementById('subjectIcon').value || '📘',
+    }});
+    document.getElementById('subjectForm').reset();
+    document.getElementById('subjectIcon').value = '📘';
+    toast('Subject added.');
+    await refreshSelects(id); // auto-select the new subject in the Add Unit form
+  } catch (err) { toast(err.message, true); }
+}
+
+async function onAddUnit(e) {
+  e.preventDefault();
+  try {
+    const subjectId = document.getElementById('unitSubjectId').value;
+    if (!subjectId) { toast('Add a subject first, then pick it here.', true); return; }
+    const { id } = await api('/resource-hub/units', { method: 'POST', body: {
+      subjectId: Number(subjectId),
+      title: document.getElementById('unitTitle').value,
+      orderIndex: Number(document.getElementById('unitOrder').value) || 1,
+    }});
+    document.getElementById('unitTitle').value = '';
+    toast('Unit added.');
+    await refreshSelects(subjectId, id); // keep subject selected, auto-select new unit for Add Resource
+  } catch (err) { toast(err.message, true); }
+}
+
+async function onAddResource(e) {
+  e.preventDefault();
+  const fileInput = document.getElementById('resourceFile');
+  if (!document.getElementById('resourceUnitId').value) { toast('Add a unit first, then pick it here.', true); return; }
+  try {
+    if (fileInput.files.length) {
+      const form = new FormData();
+      form.append('unitId', document.getElementById('resourceUnitId').value);
+      form.append('type', document.getElementById('resourceType').value);
+      form.append('title', document.getElementById('resourceTitle').value);
+      form.append('difficulty', document.getElementById('resourceDifficulty').value);
+      form.append('year', document.getElementById('resourceYear').value);
+      form.append('file', fileInput.files[0]);
+      await api('/resource-hub/resources', { method: 'POST', body: form, isForm: true });
+    } else {
+      await api('/resource-hub/resources', { method: 'POST', body: {
+        unitId: Number(document.getElementById('resourceUnitId').value),
+        type: document.getElementById('resourceType').value,
+        title: document.getElementById('resourceTitle').value,
+        difficulty: document.getElementById('resourceDifficulty').value || undefined,
+        year: document.getElementById('resourceYear').value || undefined,
+        url: document.getElementById('resourceUrl').value || undefined,
+      }});
+    }
+    document.getElementById('resourceTitle').value = '';
+    document.getElementById('resourceUrl').value = '';
+    document.getElementById('resourceYear').value = '';
+    fileInput.value = '';
+    toast('Resource added — it will show on the student site on refresh.');
+  } catch (err) { toast(err.message, true); }
+}
+
+async function onAddLab(e) {
+  e.preventDefault();
+  try {
+    await api('/lab-companion/labs', { method: 'POST', body: {
+      name: document.getElementById('labName').value,
+      semester: Number(document.getElementById('semesterFilter').value),
+      icon: document.getElementById('labIcon').value || '🧪',
+    }});
+    document.getElementById('labForm').reset();
+    document.getElementById('labIcon').value = '🧪';
+    toast('Lab added.');
+    await refreshSelects();
+  } catch (err) { toast(err.message, true); }
+}
+
+async function onAddLabFile(e) {
+  e.preventDefault();
+  const fileInput = document.getElementById('labFileFile');
+  const labId = document.getElementById('labFileLabId').value;
+  if (!labId) { toast('Add a lab first, then pick it here.', true); return; }
+  try {
+    if (fileInput.files.length) {
+      const form = new FormData();
+      form.append('labId', labId);
+      form.append('title', document.getElementById('labFileTitle').value);
+      form.append('file', fileInput.files[0]);
+      await api('/lab-companion/lab-files', { method: 'POST', body: form, isForm: true });
+    } else {
+      await api('/lab-companion/lab-files', { method: 'POST', body: {
+        labId: Number(labId),
+        title: document.getElementById('labFileTitle').value,
+        url: document.getElementById('labFileUrl').value || undefined,
+      }});
+    }
+    document.getElementById('labFileTitle').value = '';
+    document.getElementById('labFileUrl').value = '';
+    fileInput.value = '';
+    toast('File added — it will show on the student site on refresh.');
+  } catch (err) { toast(err.message, true); }
+}
+
+// ---- Manage / overview tab: see everything, delete anything ----
+async function loadManageContent() {
+  await Promise.all([loadManageSubjects(), loadManageLabs()]);
+}
+
+async function loadManageSubjects() {
+  const box = document.getElementById('manageSubjects');
+  box.innerHTML = `<p class="muted">Loading...</p>`;
+  const { subjects } = await api('/resource-hub/admin/subjects');
+  if (!subjects.length) { box.innerHTML = `<div class="empty-state">No subjects added yet.</div>`; return; }
+
+  box.innerHTML = subjects.map(s => `
+    <div class="card bracket" style="margin-bottom:12px;">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <strong>${s.icon} ${s.name}</strong>
+          <span class="tag" style="margin-left:8px;">Semester ${s.semester}</span>
+          <span class="muted mono" style="margin-left:8px;">${s.unit_count} unit${s.unit_count===1?'':'s'} · ${s.resource_count} resource${s.resource_count===1?'':'s'}</span>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button class="btn btn-outline" data-expand-subject="${s.id}">View units</button>
+          <button class="btn btn-outline" data-rename-subject="${s.id}" data-current-name="${s.name.replace(/"/g, '&quot;')}" data-current-icon="${(s.icon || '📘').replace(/"/g, '&quot;')}">Rename / change icon</button>
+          <button class="btn btn-outline" style="color:var(--danger); border-color:var(--danger);" data-delete-subject="${s.id}">Delete subject</button>
+        </div>
+      </div>
+      <div id="subjectUnits-${s.id}" class="hidden" style="margin-top:14px;"></div>
+    </div>`).join('');
+
+  document.querySelectorAll('[data-expand-subject]').forEach(btn => btn.onclick = () => toggleSubjectUnits(Number(btn.dataset.expandSubject)));
+  document.querySelectorAll('[data-rename-subject]').forEach(btn => btn.onclick = () => onRenameSubject(
+    Number(btn.dataset.renameSubject), btn.dataset.currentName, btn.dataset.currentIcon
+  ));
+  document.querySelectorAll('[data-delete-subject]').forEach(btn => btn.onclick = () => confirmDelete(
+    `Delete this subject and every unit/resource inside it? This can't be undone.`,
+    () => api(`/resource-hub/subjects/${btn.dataset.deleteSubject}`, { method: 'DELETE' }),
+    'Subject deleted.'
+  ));
+}
+
+async function toggleSubjectUnits(subjectId) {
+  const el = document.getElementById(`subjectUnits-${subjectId}`);
+  if (!el.classList.contains('hidden')) { el.classList.add('hidden'); return; }
+  el.classList.remove('hidden');
+  el.innerHTML = `<p class="muted">Loading...</p>`;
+  const { units } = await api(`/resource-hub/subjects/${subjectId}`);
+  if (!units.length) { el.innerHTML = `<p class="muted">No units yet.</p>`; return; }
+
+  el.innerHTML = units.map((u, i) => `
+    <div class="resource-row">
+      <div class="left"><div><strong>${u.title}</strong> <span class="muted mono">${u.progress_percent}%</span></div></div>
+      <div class="resource-actions">
+        <button class="icon-btn" data-move-unit="${u.id}" data-dir="up" ${i === 0 ? 'disabled' : ''} title="Move up">⬆️</button>
+        <button class="icon-btn" data-move-unit="${u.id}" data-dir="down" ${i === units.length - 1 ? 'disabled' : ''} title="Move down">⬇️</button>
+        <button class="icon-btn" data-expand-unit="${u.id}" title="View resources">📂</button>
+        <button class="icon-btn" data-rename-unit="${u.id}" data-current-title="${u.title.replace(/"/g, '&quot;')}" title="Rename unit">✏️</button>
+        <button class="icon-btn" style="color:var(--danger);" data-delete-unit="${u.id}" title="Delete unit">🗑</button>
+      </div>
+    </div>
+    <div id="unitResources-${u.id}" class="hidden" style="margin:0 0 14px 14px;"></div>`).join('');
+
+  document.querySelectorAll('[data-move-unit]').forEach(btn => btn.onclick = () => onReorderUnit(Number(btn.dataset.moveUnit), btn.dataset.dir, subjectId));
+  document.querySelectorAll('[data-expand-unit]').forEach(btn => btn.onclick = () => toggleUnitResources(Number(btn.dataset.expandUnit)));
+  document.querySelectorAll('[data-rename-unit]').forEach(btn => btn.onclick = () => onRenameUnit(
+    Number(btn.dataset.renameUnit),
+    btn.dataset.currentTitle,
+    subjectId
+  ));
+  document.querySelectorAll('[data-delete-unit]').forEach(btn => btn.onclick = () => confirmDelete(
+    `Delete this unit and every resource inside it? This can't be undone.`,
+    () => api(`/resource-hub/units/${btn.dataset.deleteUnit}`, { method: 'DELETE' }),
+    'Unit deleted.',
+    () => loadManageSubjects()
+  ));
+}
+async function onReorderUnit(unitId, direction, subjectId) {
+  try {
+    await api(`/resource-hub/units/${unitId}/reorder`, { method: 'PATCH', body: { direction } });
+    const el = document.getElementById(`subjectUnits-${subjectId}`);
+    el.classList.add('hidden');
+    await toggleSubjectUnits(subjectId);
+  } catch (err) {
+    toast(err.message || 'Could not reorder unit.', true);
+  }
+}
+async function onRenameUnit(unitId, currentTitle, subjectId) {
+  const newTitle = prompt('Rename unit to:', currentTitle);
+  if (newTitle === null) return; // cancelled
+  const trimmed = newTitle.trim();
+  if (!trimmed || trimmed === currentTitle) return;
+  try {
+    await api(`/resource-hub/units/${unitId}`, { method: 'PATCH', body: { title: trimmed } });
+    toast('Unit renamed.');
+    // Collapse and re-expand so the row shows the new title.
+    const el = document.getElementById(`subjectUnits-${subjectId}`);
+    el.classList.add('hidden');
+    await toggleSubjectUnits(subjectId);
+  } catch (err) {
+    toast(err.message || 'Could not rename unit.', true);
+  }
+}
+async function onReorderResource(resourceId, direction, unitId) {
+  try {
+    await api(`/resource-hub/resources/${resourceId}/reorder`, { method: 'PATCH', body: { direction } });
+    const el = document.getElementById(`unitResources-${unitId}`);
+    el.classList.add('hidden');
+    await toggleUnitResources(unitId);
+  } catch (err) {
+    toast(err.message || 'Could not reorder resource.', true);
+  }
+}
+async function onRenameResource(resourceId, currentTitle, unitId) {
+  const newTitle = prompt('Rename resource to:', currentTitle);
+  if (newTitle === null) return; // cancelled
+  const trimmed = newTitle.trim();
+  if (!trimmed || trimmed === currentTitle) return;
+  try {
+    await api(`/resource-hub/resources/${resourceId}`, { method: 'PATCH', body: { title: trimmed } });
+    toast('Resource renamed.');
+    // Collapse and re-expand so the row shows the new title.
+    const el = document.getElementById(`unitResources-${unitId}`);
+    el.classList.add('hidden');
+    await toggleUnitResources(unitId);
+  } catch (err) {
+    toast(err.message || 'Could not rename resource.', true);
+  }
+}
+
+async function toggleUnitResources(unitId) {
+  const el = document.getElementById(`unitResources-${unitId}`);
+  if (!el.classList.contains('hidden')) { el.classList.add('hidden'); return; }
+  el.classList.remove('hidden');
+  el.innerHTML = `<p class="muted">Loading...</p>`;
+  const { resources } = await api(`/resource-hub/units/${unitId}`);
+  const flat = Object.values(resources).flat();
+  if (!flat.length) { el.innerHTML = `<p class="muted">No resources yet.</p>`; return; }
+
+  el.innerHTML = flat.map((r, i) => `
+    <div class="resource-row">
+      <div class="left"><span>${resourceIcon(r.type)}</span><div><strong>${r.title}</strong><div class="meta">${r.year || r.difficulty || ''}</div></div></div>
+      <div class="resource-actions">
+        <button class="icon-btn" data-move-resource="${r.id}" data-dir="up" ${i === 0 ? 'disabled' : ''} title="Move up">⬆️</button>
+        <button class="icon-btn" data-move-resource="${r.id}" data-dir="down" ${i === flat.length - 1 ? 'disabled' : ''} title="Move down">⬇️</button>
+        ${r.url ? `<a class="icon-btn" href="${resolveFileUrl(r.url)}" target="_blank" rel="noopener">⬇</a>` : ''}
+        <button class="icon-btn" data-rename-resource="${r.id}" data-current-title="${r.title.replace(/"/g, '&quot;')}" title="Rename resource">✏️</button>
+        <button class="icon-btn" style="color:var(--danger);" data-delete-resource="${r.id}">🗑</button>
+      </div>
+    </div>`).join('');
+
+  document.querySelectorAll('[data-move-resource]').forEach(btn => btn.onclick = () => onReorderResource(Number(btn.dataset.moveResource), btn.dataset.dir, unitId));
+  document.querySelectorAll('[data-rename-resource]').forEach(btn => btn.onclick = () => onRenameResource(
+    Number(btn.dataset.renameResource), btn.dataset.currentTitle, unitId
+  ));
+  document.querySelectorAll('[data-delete-resource]').forEach(btn => btn.onclick = () => confirmDelete(
+    `Delete "${btn.closest('.resource-row').querySelector('strong').textContent}"? This can't be undone.`,
+    () => api(`/resource-hub/resources/${btn.dataset.deleteResource}`, { method: 'DELETE' }),
+    'Resource deleted.',
+    () => loadManageSubjects()
+  ));
+}
+
+function resourceIcon(type) {
+  return { note: '📄', video: '📺', pyq: '📚', practice: '📝', book: '📖', important_topic: '⭐' }[type] || '📎';
+}
+
+async function loadManageLabs() {
+  const box = document.getElementById('manageLabs');
+  box.innerHTML = `<p class="muted">Loading...</p>`;
+  const { labs } = await api('/lab-companion/admin/labs');
+  if (!labs.length) { box.innerHTML = `<div class="empty-state">No labs added yet.</div>`; return; }
+
+  box.innerHTML = labs.map(l => `
+    <div class="card bracket" style="margin-bottom:12px;">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <strong>${l.icon || '🧪'} ${l.name}</strong>
+          <span class="tag" style="margin-left:8px;">Semester ${l.semester}</span>
+          <span class="muted mono" style="margin-left:8px;">${l.file_count} file${l.file_count===1?'':'s'}</span>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button class="btn btn-outline" data-expand-lab="${l.id}">View files</button>
+          <button class="btn btn-outline" data-rename-lab="${l.id}" data-current-name="${l.name.replace(/"/g, '&quot;')}" data-current-icon="${(l.icon || '🧪').replace(/"/g, '&quot;')}">Rename / change icon</button>
+          <button class="btn btn-outline" style="color:var(--danger); border-color:var(--danger);" data-delete-lab="${l.id}">Delete lab</button>
+        </div>
+      </div>
+      <div id="labFiles-${l.id}" class="hidden" style="margin-top:14px;"></div>
+    </div>`).join('');
+
+  document.querySelectorAll('[data-expand-lab]').forEach(btn => btn.onclick = () => toggleLabFiles(Number(btn.dataset.expandLab)));
+  document.querySelectorAll('[data-rename-lab]').forEach(btn => btn.onclick = () => onRenameLab(
+    Number(btn.dataset.renameLab), btn.dataset.currentName, btn.dataset.currentIcon
+  ));
+  document.querySelectorAll('[data-delete-lab]').forEach(btn => btn.onclick = () => confirmDelete(
+    `Delete this lab and every file inside it? This can't be undone.`,
+    () => api(`/lab-companion/labs/${btn.dataset.deleteLab}`, { method: 'DELETE' }),
+    'Lab deleted.',
+    () => loadManageLabs()
+  ));
+}
+async function onRenameSubject(subjectId, currentName, currentIcon) {
+  const newName = prompt('Rename subject to:', currentName);
+  if (newName === null) return;
+  const newIcon = prompt('Icon (any emoji):', currentIcon);
+  if (newIcon === null) return;
+  const trimmedName = newName.trim() || currentName;
+  const trimmedIcon = newIcon.trim() || currentIcon;
+  if (trimmedName === currentName && trimmedIcon === currentIcon) return;
+  try {
+    await api(`/resource-hub/subjects/${subjectId}`, { method: 'PATCH', body: { name: trimmedName, icon: trimmedIcon } });
+    toast('Subject updated.');
+    await loadManageSubjects();
+  } catch (err) { toast(err.message || 'Could not update subject.', true); }
+}
+async function onRenameLab(labId, currentName, currentIcon) {
+  const newName = prompt('Rename lab to:', currentName);
+  if (newName === null) return;
+  const newIcon = prompt('Icon (any emoji):', currentIcon);
+  if (newIcon === null) return;
+  const trimmedName = newName.trim() || currentName;
+  const trimmedIcon = newIcon.trim() || currentIcon;
+  if (trimmedName === currentName && trimmedIcon === currentIcon) return;
+  try {
+    await api(`/lab-companion/labs/${labId}`, { method: 'PATCH', body: { name: trimmedName, icon: trimmedIcon } });
+    toast('Lab updated.');
+    await loadManageLabs();
+  } catch (err) { toast(err.message || 'Could not update lab.', true); }
+}
+
+async function toggleLabFiles(labId) {
+  const el = document.getElementById(`labFiles-${labId}`);
+  if (!el.classList.contains('hidden')) { el.classList.add('hidden'); return; }
+  el.classList.remove('hidden');
+  el.innerHTML = `<p class="muted">Loading...</p>`;
+  const { files } = await api(`/lab-companion/labs/${labId}`);
+  if (!files.length) { el.innerHTML = `<p class="muted">No files yet.</p>`; return; }
+
+  el.innerHTML = files.map(f => `
+    <div class="resource-row">
+      <div class="left">
+        <span>📄</span>
+        ${f.url ? `<a href="${resolveFileUrl(f.url)}" target="_blank" rel="noopener" style="color:inherit;"><strong>${f.title}</strong></a>` : `<strong>${f.title}</strong>`}
+      </div>
+      <div class="resource-actions">
+        <button class="icon-btn" data-edit-lab-file="${f.id}" data-current-title="${f.title.replace(/"/g, '&quot;')}" data-current-url="${(f.url || '').replace(/"/g, '&quot;')}" title="Edit">✏️</button>
+        <button class="icon-btn" style="color:var(--danger);" data-delete-lab-file="${f.id}" title="Delete">🗑</button>
+      </div>
+    </div>`).join('');
+
+  document.querySelectorAll('[data-edit-lab-file]').forEach(btn => btn.onclick = () => onEditLabFile(
+    Number(btn.dataset.editLabFile), btn.dataset.currentTitle, btn.dataset.currentUrl, labId
+  ));
+  document.querySelectorAll('[data-delete-lab-file]').forEach(btn => btn.onclick = () => confirmDelete(
+    `Delete "${btn.closest('.resource-row').querySelector('strong').textContent}"? This can't be undone.`,
+    () => api(`/lab-companion/lab-files/${btn.dataset.deleteLabFile}`, { method: 'DELETE' }),
+    'File deleted.',
+    () => loadManageLabs()
+  ));
+}
+
+async function onEditLabFile(fileId, currentTitle, currentUrl, labId) {
+  const newTitle = prompt('File title:', currentTitle);
+  if (newTitle === null) return;
+  const newUrl = prompt('File link (a re-upload isn\'t supported here — paste a link, or leave as-is):', currentUrl);
+  if (newUrl === null) return;
+  try {
+    await api(`/lab-companion/lab-files/${fileId}`, { method: 'PATCH', body: {
+      title: newTitle.trim() || currentTitle,
+      url: newUrl.trim(),
+    }});
+    toast('File updated.');
+    const el = document.getElementById(`labFiles-${labId}`);
+    el.classList.add('hidden');
+    await toggleLabFiles(labId);
+  } catch (err) { toast(err.message || 'Could not update file.', true); }
+}
+
+
+function confirmDelete(message, action, successMessage, onDone) {
+  if (!confirm(message)) return;
+  action()
+    .then(() => { toast(successMessage); return onDone ? onDone() : loadManageContent(); })
+    .catch(err => toast(err.message, true));
+}
+
+</script>
+</body>
+</html>

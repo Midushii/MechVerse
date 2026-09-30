@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MechVerse — Lab Companion</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<div id="topbar-root"></div>
+
+<div class="container" id="labListView">
+  <div style="display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:12px;">
+    <div><h2 class="page-title">Lab Companion</h2><p class="muted" style="margin:0;font-size:20px;">Everything you need to prepare for your lab sessions!</p></div>
+    <div class="field" style="margin:0;">
+    
+      <select id="semesterSwitch" style="max-width:160px;">
+        <option value="1">Semester 1</option><option value="2">Semester 2</option><option value="3">Semester 3</option><option value="4">Semester 4</option>
+      </select>
+    </div>
+  </div>
+  <div class="grid cols-3" id="labGrid" style="margin-top:20px;"></div>
+</div>
+
+<div class="container hidden" id="labFilesView">
+  <a href="#" id="backToLabs" class="muted" style="text-decoration:none;">← All labs</a>
+  <h2 id="labName" style="margin-top:14px;"></h2>
+  <div id="labFileList" style="margin-top:16px;"></div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/theme.js"></script>
+<script src="js/ui-helpers.js"></script>
+<script src="js/nav.js"></script>
+<script src="js/back-to-top.js"></script>
+<script>
+(async () => {
+  const user = await requireSession();
+  if (!user) return;
+  renderNav('lab', user);
+
+  const savedSemester = sessionStorage.getItem('mv_viewSemester');
+  const initialSemester = savedSemester || String(user.semester || 1);
+  document.getElementById('semesterSwitch').value = initialSemester;
+
+  document.getElementById('semesterSwitch').addEventListener('change', (e) => {
+    sessionStorage.setItem('mv_viewSemester', e.target.value);
+    loadLabs(e.target.value);
+  });
+
+  await loadLabs(initialSemester);
+})();
+
+async function loadLabs(semester) {
+  const { labs } = await api(`/lab-companion/labs?semester=${semester}`);
+  const grid = document.getElementById('labGrid');
+  grid.innerHTML = labs.length ? labs.map(l =>
+    `<div class="card bracket subject-card" data-lab="${l.id}"><h3 style="margin:0;">${l.icon || '🧪'} ${l.name}</h3></div>`).join('')
+    : `<div class="empty-state">No labs added for semester ${semester} yet.</div>`;
+  document.querySelectorAll('[data-lab]').forEach(el => el.onclick = () => openLab(Number(el.dataset.lab)));
+}
+
+async function openLab(labId) {
+  const { lab, files } = await api(`/lab-companion/labs/${labId}`);
+  document.getElementById('labListView').classList.add('hidden');
+  document.getElementById('labFilesView').classList.remove('hidden');
+  document.getElementById('labName').textContent = `${lab.icon || '🧪'} ${lab.name}`;
+  document.getElementById('backToLabs').onclick = (e) => { e.preventDefault(); location.reload(); };
+
+  const list = document.getElementById('labFileList');
+  list.innerHTML = files.length ? files.map(labFileRow).join('') : `<div class="empty-state">No files added yet.</div>`;
+}
+
+function youtubeId(url) {
+  if (!url) return null;
+  const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([A-Za-z0-9_-]{6,})/);
+  return m ? m[1] : null;
+}
+
+function labFileRow(f) {
+  const ytId = youtubeId(f.url);
+
+  if (ytId) {
+    return `<div class="resource-row" style="align-items:center;">
+      <a href="${f.url}" target="_blank" rel="noopener" style="position:relative; display:block; width:100px; flex:none;">
+        <img src="https://img.youtube.com/vi/${ytId}/mqdefault.jpg" alt="${f.title}" style="width:100px; height:56px; object-fit:cover; border-radius:6px; border:1px solid var(--border); display:block;" />
+        <span style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:22px; color:#fff; text-shadow:0 1px 4px rgba(0,0,0,0.6);">▶</span>
+      </a>
+      <div style="margin-left:10px;"><strong>${f.title}</strong><div class="meta">Opens on YouTube</div></div>
+    </div>`;
+  }
+
+  return `<div class="resource-row">
+    <div class="left">
+      <span>📄</span>
+      ${f.url ? `<a href="${resolveFileUrl(f.url)}" target="_blank" rel="noopener" style="color:inherit;"><strong>${f.title}</strong></a>` : `<strong>${f.title}</strong>`}
+    </div>
+    ${f.url ? `<a class="icon-btn" href="${resolveFileUrl(f.url)}" target="_blank" rel="noopener" title="Download">⬇</a>` : ''}
+  </div>`;
+}
+</script>
+</body>
+</html>

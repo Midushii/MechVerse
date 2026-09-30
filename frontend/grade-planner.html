@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MechVerse — Grade Planner</title>
+<link rel="stylesheet" href="css/style.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<style>
+  /* ---- Typography ---- */
+  #listView, #detailView {
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+  #listView h2, #detailView h2 {
+    font-family: var(--font-head);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+  #detailView h2 { font-size: 26px; }
+  #listView .muted, #detailView .muted { line-height: 1.5; }
+  .card.bracket h3 {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin: 0 0 16px;
+    color: var(--ink);
+  }
+  .subject-card h3 {
+    font-weight: 700;
+    font-size: 17px;
+    letter-spacing: -0.01em;
+  }
+  .field label {
+    font-weight: 600;
+    font-size: 13.5px;
+    letter-spacing: -0.005em;
+    color: var(--ink-soft);
+  }
+
+  /* ---- Cards & spacing ---- */
+  .card.bracket {
+    border-radius: 16px;
+    padding: 24px;
+  }
+  #detailSubjectName { margin: 18px 0 20px; }
+
+  /* ---- Grade pills ---- */
+  .grade-pill {
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 9px 20px; border-radius: 100px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--ink-soft); font-weight: 700; font-size: 14px;
+    cursor: pointer; transition: all .15s ease; margin: 0 8px 8px 0;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .grade-pill:hover { border-color: var(--primary); }
+  .grade-pill.selected { background: var(--primary); border-color: var(--primary); color: #fff; }
+
+  .predict-pill {
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 9px 18px; border-radius: 100px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--ink-soft); font-weight: 600; font-size: 13.5px;
+    cursor: pointer; transition: all .15s ease; margin: 0 8px 8px 0;
+  }
+  .predict-pill:hover { border-color: var(--accent); }
+  .predict-pill.selected { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  /* ---- Marks input row ---- */
+  .marks-block { margin-bottom: 22px; }
+  .marks-block:last-child { margin-bottom: 4px; }
+  .marks-block-head {
+    margin-bottom: 10px;
+  }
+  .marks-value {
+    display: block;
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+    margin-top: 6px;
+  }
+  .sync-row { display: grid; grid-template-columns: 1fr 84px; gap: 14px; align-items: center; margin-bottom: 4px; }
+  .sync-row input[type=range] { accent-color: var(--primary); }
+  .sync-row input[type=number] {
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    border-radius: 10px;
+  }
+
+  /* ---- Buttons ---- */
+  .btn.btn-primary {
+    font-weight: 700;
+    letter-spacing: -0.005em;
+    border-radius: 12px;
+    padding: 10px 20px;
+  }
+
+  /* ---- Grade badge / result ---- */
+  .grade-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 68px; height: 68px; border-radius: 18px; font-family: 'JetBrains Mono', monospace;
+    font-size: 30px; font-weight: 700; background: var(--primary-tint); color: var(--primary-dark);
+    border: 2px solid var(--primary);
+  }
+  #predictedGradeResult .mono {
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: -0.01em;
+  }
+
+  /* ---- Predict marks needed result ---- */
+  .fixed-marks-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .fixed-mark {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface-2);
+  }
+  .fixed-mark-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink-soft);
+  }
+  .fixed-mark-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 13.5px;
+    color: var(--ink);
+  }
+  .plan-card {
+    border-radius: 14px;
+    padding: 20px;
+  }
+  .plan-card h4 {
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: -0.01em;
+    margin: 0 0 14px;
+  }
+  .strategy-item { padding: 10px 0; }
+  .strategy-item strong { font-weight: 700; }
+  .strategy-item .muted {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+  }
+  .plan-total {
+    font-size: 15px;
+    margin: 0;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+  }
+  .plan-total strong { font-family: 'JetBrains Mono', monospace; }
+
+  /* ---- Regulations table ---- */
+  details.regs-box summary { cursor: pointer; font-weight: 700; padding: 4px 0; font-size: 14px; }
+  .regs-table { width: 100%; border-collapse: collapse; margin-top: 12px; font-family: 'JetBrains Mono', monospace; font-size: 13px; }
+  .regs-table th, .regs-table td { border: 1px solid var(--border); padding: 9px 12px; text-align: center; }
+  .regs-table th { background: var(--surface-2); font-family: 'Manrope', sans-serif; font-weight: 700; }
+
+  @media (max-width: 640px) {
+    .card.bracket { padding: 18px; }
+    .sync-row { grid-template-columns: 1fr 68px; gap: 10px; }
+  }
+</style>
+</head>
+<body>
+<div class="bg-fx" aria-hidden="true">
+  <span class="bg-blob bg-blob-1"></span>
+  <span class="bg-blob bg-blob-2"></span>
+  <span class="bg-blob bg-blob-3"></span>
+  <span class="bg-icon bg-icon-1">⚙️</span>
+  <span class="bg-icon bg-icon-2">📐</span>
+  <span class="bg-icon bg-icon-3">🔧</span>
+  <span class="bg-icon bg-icon-4">🛠️</span>
+</div>
+<div id="topbar-root"></div>
+
+<!-- ===== SUBJECT LIST VIEW ===== -->
+<div class="container" id="listView">
+  <div class="section-title" style="margin-top:0;">
+    <div><h2>Grade Planner</h2><p class="muted" style="font-size:20px;"> Enter Your Marks, Set Your Target Grade, And Know Exactly What You Need To Reach It!
+ </p></div>
+    <select id="semesterSwitch" style="max-width:160px;">
+      <option value="1">Semester 1</option>
+      <option value="2">Semester 2</option>
+    </select>
+  </div>
+  <div id="courseGrid" class="grid cols-2"></div>
+</div>
+
+<!-- ===== SUBJECT DETAIL VIEW ===== -->
+<div class="container hidden" id="detailView">
+  <a href="#" id="backToList" class="muted" style="text-decoration:none;">← Back to all subjects</a>
+  <h2 id="detailSubjectName"></h2>
+
+  <!-- Section 1: Enter your marks -->
+  <div class="card bracket" style="margin-bottom:20px;">
+    <h3>1. Enter your marks</h3>
+    <div id="marksInputs"></div>
+  </div>
+
+  <!-- Predicted Grade -->
+  <div class="card bracket" style="margin-bottom:20px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+      <div>
+        <div class="muted" style="text-transform:uppercase; font-size:12px; letter-spacing:.06em; font-weight:600;">Predicted Grade</div>
+        <div id="predictedGradeResult" style="margin-top:8px;"><span class="muted">Not calculated yet.</span></div>
+      </div>
+      <button class="btn btn-primary" id="predictGradeBtn">Predict Grade</button>
+    </div>
+  </div>
+
+  <!-- Section 3: Target grade + status -->
+  <div class="card bracket" style="margin-bottom:20px;">
+    <h3>2.Select the Grade You’re Targeting </h3>
+    <div id="targetPills" class="chip-select" style="margin-bottom:14px;"></div>
+    <div class="grid cols-3" id="targetStatusRow" style="display:none;">
+      <div class="stat-block"><div class="num" id="statCurrent">–</div><div class="lbl">Current score</div></div>
+      <div class="stat-block"><div class="num" id="statTarget">–</div><div class="lbl">Target score</div></div>
+      <div class="stat-block"><div class="num" id="statStatus">–</div><div class="lbl">Status</div></div>
+    </div>
+  </div>
+
+  <!-- Section 4: Predict marks needed -->
+  <div class="card bracket" style="margin-bottom:20px;">
+    <h3>3. Predict Marks Needed for Your Target Grade </h3>
+    <p class="muted">Choose the marks you want to predict</p>
+    <div id="predictComponentPills" class="chip-select" style="margin-bottom:14px;"></div>
+    <button class="btn btn-primary" id="predictMarksBtn">Predict Marks</button>
+    <div id="predictMarksResult" style="margin-top:16px;"></div>
+  </div>
+
+  <!-- Grading Regulations -->
+  <div class="card bracket" style="margin-bottom:20px;">
+    <details class="regs-box">
+      <summary>Grading Regulations</summary>
+      <p class="muted" style="margin-top:10px;">Your final score out of 100 maps to a letter grade using this absolute grading scale:</p>
+      <table class="regs-table">
+        <thead><tr><th>Marks</th><th>Grade</th><th>Marks</th></tr></thead>
+        <tbody id="regsTableBody"></tbody>
+      </table>
+    </details>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/theme.js"></script>
+<script src="js/ui-helpers.js"></script>
+<script src="js/nav.js"></script>
+<script src="js/back-to-top.js"></script>
+<script>
+// Absolute grading scale -- matches the official reference exactly.
+// Order matters: checked top to bottom, first match wins.
+const GRADE_SCALE = [
+  { grade: 'A+', min: 93, max: 100 },
+  { grade: 'A',  min: 85, max: 92 },
+  { grade: 'B+', min: 77, max: 84 },
+  { grade: 'B',  min: 69, max: 76 },
+  { grade: 'C+', min: 61, max: 68 },
+  { grade: 'C',  min: 53, max: 60 },
+  { grade: 'D',  min: 45, max: 52 },
+  { grade: 'F',  min: 0,  max: 44 },
+];
+function gradeForScore(score) {
+  for (const g of GRADE_SCALE) if (score >= g.min) return g.grade;
+  return 'F';
+}
+
+// Component names this project seeds; conversion factor into a 0-100 total.
+// Mid Semester and Lab Practical Marks are halved (raw /30 -> converted /15)
+// EXCEPT for Applied Mathematics, which has no lab and lets Mid Semester
+// count in full so the total still reaches exactly 100.
+function convertedMaxFor(name, subjectName) {
+  const isMath = subjectName === 'Applied Mathematics';
+  if (name === 'Mid Semester') return isMath ? 30 : 15;
+  if (name === 'Lab Practical Marks') return 15;
+  return null; // Internal Marks / End Semester: pass through at raw max (10 / 60)
+}
+function convertedScoreFor(name, rawValue, subjectName) {
+  const isMath = subjectName === 'Applied Mathematics';
+  if (name === 'Mid Semester') return isMath ? rawValue : rawValue * 0.5;
+  if (name === 'Lab Practical Marks') return rawValue * 0.5;
+  return rawValue; // Internal Marks & End Semester: 1:1
+}
+function computeFinalScore(course) {
+  return course.components.reduce((sum, c) => sum + convertedScoreFor(c.name, c.marks || 0, course.name), 0);
+}
+
+let currentUser;
+let currentCourse; // full course object for whichever subject is open
+let selectedTargetGrade = null;
+let selectedPredictComponents = new Set();
+
+(async () => {
+  currentUser = await requireSession();
+  if (!currentUser) return;
+  renderNav('grade', currentUser);
+  renderGradingRegsTable();
+
+  document.getElementById('semesterSwitch').value = '1';
+  document.getElementById('semesterSwitch').addEventListener('change', (e) => loadCourseList(e.target.value));
+
+  document.getElementById('backToList').addEventListener('click', (e) => {
+    e.preventDefault();
+    document.getElementById('detailView').classList.add('hidden');
+    document.getElementById('listView').classList.remove('hidden');
+    loadCourseList(document.getElementById('semesterSwitch').value);
+  });
+
+  document.getElementById('predictGradeBtn').addEventListener('click', onPredictGrade);
+  document.getElementById('predictMarksBtn').addEventListener('click', onPredictMarksNeeded);
+
+  await loadCourseList('1');
+})();
+
+function renderGradingRegsTable() {
+  // Displayed as two side-by-side ranges per the reference layout.
+  const rows = [
+    ['>= 93', 'A+', '<= 100'], ['>= 85', 'A', '<= 92'], ['>= 77', 'B+', '<= 84'], ['>= 69', 'B', '<= 76'],
+    ['>= 61', 'C+', '<= 68'], ['>= 53', 'C', '<= 60'], ['>= 45', 'D', '<= 52'], ['-', 'F', '< 45'],
+  ];
+  document.getElementById('regsTableBody').innerHTML = rows.map(([a,b,c]) => `<tr><td>${a}</td><td>${b}</td><td>${c}</td></tr>`).join('');
+}
+
+async function loadCourseList(semester) {
+  const { courses } = await api(`/grade-planner/courses?semester=${semester}`);
+  window.__mvCourses = courses;
+  const grid = document.getElementById('courseGrid');
+  grid.innerHTML = courses.length ? courses.map((c, i) => courseCard(c, i)).join('') : `<div class="empty-state">No subjects added for this semester yet.</div>`;
+  document.querySelectorAll('[data-open-course]').forEach(el => {
+    el.addEventListener('click', () => openCourse(Number(el.dataset.openCourse), true));
+    wireCardTilt(el);
+  });
+}
+
+const COURSE_ACCENTS = ['#2f6690', '#e0982f', '#3f8f5f', '#8a5cb0', '#c4463a', '#1f9099'];
+
+function courseCard(c, index) {
+  const score = computeFinalScore(c);
+  const target = c.target_percent;
+  const status = statusFor(score, target);
+  const accent = COURSE_ACCENTS[index % COURSE_ACCENTS.length];
+  return `<div class="card bracket subject-card reveal-init" data-open-course="${c.id}" style="--accent:${accent}; --reveal-delay:${index * 70}ms;">
+    <span class="shine"></span>
+    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+      <h3 style="margin:0;">${c.name}</h3>
+      <span class="status-pill status-${status}">${status.replace('_',' ')}</span>
+    </div>
+    <div class="progress-bar"><span style="width:${Math.min(score,100)}%"></span></div>
+    <div class="progress-label"><span>${Math.round(score)}%</span><span>${target ? 'Target ' + Math.round(target) + '%' : ''}</span></div>
+    <div class="quick-action">Open planner →</div>
+  </div>`;
+}
+
+function statusFor(score, target) {
+  if (target == null) return 'not_started';
+  if (score >= target) return 'on_track';
+  if (score >= target - 10) return 'needs_attention';
+  return 'at_risk';
+}
+
+async function openCourse(courseId, resetPredictSelections) {
+  const { courses } = await api(`/grade-planner/courses?semester=${document.getElementById('semesterSwitch').value}`);
+  window.__mvCourses = courses;
+  currentCourse = courses.find(c => c.id === courseId);
+  if (!currentCourse) return;
+
+  if (resetPredictSelections) selectedPredictComponents = new Set();
+  selectedTargetGrade = currentCourse.target_percent != null ? gradeForScore(currentCourse.target_percent) : null;
+
+  document.getElementById('listView').classList.add('hidden');
+  document.getElementById('detailView').classList.remove('hidden');
+  document.getElementById('detailSubjectName').textContent = currentCourse.name;
+
+  renderMarksInputs();
+  renderTargetPills();
+  renderPredictComponentPills();
+  updateTargetStatusDisplay();
+
+  document.getElementById('predictedGradeResult').innerHTML = `<span class="muted">Not calculated yet.</span>`;
+  document.getElementById('predictMarksResult').innerHTML = '';
+}
+
+function renderMarksInputs() {
+  document.getElementById('marksInputs').innerHTML = currentCourse.components.map(c => `
+    <div class="marks-block">
+      <div class="marks-block-head">
+        <label class="field-label" style="font-weight:600; font-size:13.5px; color:var(--ink-soft);">${c.name}</label>
+        <span class="marks-value" data-marks-value="${c.id}">${c.marks ?? 0} / ${c.max_marks}</span>
+      </div>
+      <div class="sync-row">
+        <input type="range" min="0" max="${c.max_marks}" value="${c.marks ?? 0}" data-slider-comp="${c.id}" />
+        <input type="number" min="0" max="${c.max_marks}" value="${c.marks ?? 0}" data-number-comp="${c.id}" />
+      </div>
+    </div>`).join('');
+
+  currentCourse.components.forEach(c => {
+    const slider = document.querySelector(`[data-slider-comp="${c.id}"]`);
+    const number = document.querySelector(`[data-number-comp="${c.id}"]`);
+    const valueLabel = document.querySelector(`[data-marks-value="${c.id}"]`);
+    const sync = (value) => {
+      const v = Math.max(0, Math.min(c.max_marks, Number(value) || 0));
+      slider.value = v; number.value = v;
+      c.marks = v;
+      valueLabel.textContent = `${v} / ${c.max_marks}`;
+      updateTargetStatusDisplay();
+    };
+    slider.addEventListener('input', () => sync(slider.value));
+    number.addEventListener('input', () => sync(number.value));
+    // Persist to the backend on change (not on every drag tick) so marks
+    // survive a refresh, same as the rest of the site.
+    const persist = () => api('/grade-planner/marks', { method: 'POST', body: { componentId: c.id, marks: c.marks } }).catch(() => {});
+    slider.addEventListener('change', persist);
+    number.addEventListener('change', persist);
+  });
+}
+
+function renderTargetPills() {
+  const grades = GRADE_SCALE.filter(g => g.grade !== 'F'); // targeting an F makes no sense
+  document.getElementById('targetPills').innerHTML = grades.map(g =>
+    `<label class="grade-pill ${selectedTargetGrade === g.grade ? 'selected' : ''}" data-target-grade="${g.grade}">${g.grade}</label>`
+  ).join('');
+  document.querySelectorAll('[data-target-grade]').forEach(el => el.addEventListener('click', async () => {
+    const grade = el.dataset.targetGrade;
+    selectedTargetGrade = grade;
+    const targetInfo = GRADE_SCALE.find(g => g.grade === grade);
+    currentCourse.target_percent = targetInfo.min;
+    renderTargetPills();
+    updateTargetStatusDisplay();
+    try {
+      await api('/grade-planner/target', { method: 'POST', body: { courseId: currentCourse.id, targetPercent: targetInfo.min } });
+    } catch (e) { /* non-fatal for the UI */ }
+  }));
+}
+
+function updateTargetStatusDisplay() {
+  const score = computeFinalScore(currentCourse);
+  const target = currentCourse.target_percent;
+  const row = document.getElementById('targetStatusRow');
+  if (target == null) { row.style.display = 'none'; return; }
+  row.style.display = '';
+  document.getElementById('statCurrent').textContent = Math.round(score) + '%';
+  document.getElementById('statTarget').textContent = Math.round(target) + '%';
+  const status = statusFor(score, target);
+  const label = { on_track: 'On Track', needs_attention: 'Needs Attention', at_risk: 'At Risk', not_started: 'Not Started' }[status];
+  document.getElementById('statStatus').innerHTML = `<span class="status-pill status-${status}">${label}</span>`;
+}
+
+function renderPredictComponentPills() {
+  const options = currentCourse.components.filter(c => c.name !== 'Mid Semester'); // Mid Sem isn't predictable per spec
+  document.getElementById('predictComponentPills').innerHTML = options.map(c =>
+    `<label class="predict-pill ${selectedPredictComponents.has(c.id) ? 'selected' : ''}" data-predict-comp="${c.id}">${predictPillLabel(c.name)}</label>`
+  ).join('');
+  document.querySelectorAll('[data-predict-comp]').forEach(el => el.addEventListener('click', () => {
+    const id = Number(el.dataset.predictComp);
+    if (selectedPredictComponents.has(id)) selectedPredictComponents.delete(id); else selectedPredictComponents.add(id);
+    renderPredictComponentPills();
+  }));
+}
+function predictPillLabel(name) {
+  return { 'Lab Practical Marks': 'Lab Practical', 'Internal Marks': 'Internals', 'End Semester': 'End Semester' }[name] || name;
+}
+
+// ---- Predict Grade: instant result, no loading state ----
+function onPredictGrade() {
+  const result = document.getElementById('predictedGradeResult');
+  const score = computeFinalScore(currentCourse);
+  const grade = gradeForScore(score);
+  result.innerHTML = `
+    <div style="display:flex; align-items:center; gap:14px;">
+      <div class="grade-badge">${grade}</div>
+      <div class="mono" style="font-size:20px; font-weight:700;">${score.toFixed(1)} / 100</div>
+    </div>`;
+}
+
+// ---- Predict Marks Needed: instant result, no loading state ----
+function onPredictMarksNeeded() {
+  if (selectedPredictComponents.size === 0) {
+    document.getElementById('predictMarksResult').innerHTML = `<p class="muted">Select at least one component above first.</p>`;
+    return;
+  }
+  if (currentCourse.target_percent == null) {
+    document.getElementById('predictMarksResult').innerHTML = `<p class="muted">Set a target grade above first.</p>`;
+    return;
+  }
+  document.getElementById('predictMarksResult').innerHTML = computePredictedMarksHtml();
+}
+
+function computePredictedMarksHtml() {
+  const target = currentCourse.target_percent;
+  const selected = currentCourse.components.filter(c => selectedPredictComponents.has(c.id));
+  const fixed = currentCourse.components.filter(c => !selectedPredictComponents.has(c.id));
+
+  const fixedContribs = fixed.map(c => ({
+    name: c.name,
+    raw: c.marks || 0,
+    max: c.max_marks,
+    converted: convertedScoreFor(c.name, c.marks || 0, currentCourse.name),
+  }));
+  const fixedTotal = fixedContribs.reduce((s, c) => s + c.converted, 0);
+
+  // Minimal "X / Y" readout for the marks that aren't being predicted, so the
+  // suggested numbers below are never read in a vacuum.
+  const fixedListHtml = fixedContribs.length ? `
+    <div class="fixed-marks-row">
+      ${fixedContribs.map(c => `<div class="fixed-mark"><span class="fixed-mark-label">${c.name}</span><span class="fixed-mark-value">${c.raw} / ${c.max}</span></div>`).join('')}
+    </div>` : '';
+
+  const maxSelectedConverted = selected.reduce((s, c) => s + (convertedMaxFor(c.name, currentCourse.name) ?? c.max_marks), 0);
+  const needed = target - fixedTotal;
+
+  if (needed <= 0) {
+    return `${fixedListHtml}<div class="alert alert-success">You've already secured this target.</div>`;
+  }
+  if (needed > maxSelectedConverted + 0.001) {
+    return `${fixedListHtml}<div class="alert alert-error">This target isn't reachable through just the selected components.</div>`;
+  }
+
+  // Fill the smallest-weight components first and only let the LAST one
+  // absorb any rounding, so suggestions never overshoot the target.
+  const order = [...selected].sort((a, b) =>
+    (convertedMaxFor(a.name, currentCourse.name) ?? a.max_marks) - (convertedMaxFor(b.name, currentCourse.name) ?? b.max_marks)
+  );
+  let remaining = needed;
+  const suggestionByName = {};
+  let achievedConverted = fixedTotal;
+  for (const c of order) {
+    const convertedMax = convertedMaxFor(c.name, currentCourse.name) ?? c.max_marks;
+    const factor = convertedMax / c.max_marks;
+    const take = Math.max(0, Math.min(remaining, convertedMax));
+    const rawNeeded = take <= 0 ? 0 : Math.min(c.max_marks, Math.ceil(take / factor));
+    const actualConverted = convertedScoreFor(c.name, rawNeeded, currentCourse.name);
+    achievedConverted += actualConverted;
+    remaining -= take;
+    suggestionByName[c.name] = { rawNeeded, max: c.max_marks };
+  }
+
+  const rows = selected.map(c => {
+    const s = suggestionByName[c.name];
+    return `<div class="strategy-item"><div class="strategy-rank">${predictPillLabel(c.name)[0]}</div><div><strong>${predictPillLabel(c.name)}</strong><div class="muted">Aim for at least ${s.rawNeeded} / ${s.max}</div></div></div>`;
+  }).join('');
+
+  const resultGrade = gradeForScore(achievedConverted);
+  return `${fixedListHtml}<div class="card plan-card" style="border-style:dashed;">
+    <h4>To reach ${gradeForScore(target)} (${target}%)</h4>
+    ${rows}
+    <p class="plan-total">Total: <strong>${achievedConverted.toFixed(1)} / 100</strong> — <strong>${resultGrade}</strong> grade.</p>
+  </div>`;
+}
+</script>
+</body>
+</html>
