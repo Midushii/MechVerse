@@ -14,8 +14,7 @@ A one-stop academic companion for Mechanical Engineering students — curated st
 
 **🌐 [mechverse-igdtuw.vercel.app](https://mechverse-igdtuw.vercel.app/)**
 
-<img width="1906" height="874" alt="image" src="https://github.com/user-attachments/assets/dfacf77c-b5af-42a6-8f87-bf83a4be5901" />
-
+<img src="frontend/assets/7.png" width="860" alt="MechVerse home page">
 
 <em>The MechVerse landing page — four tools, one platform.</em>
 
@@ -128,7 +127,7 @@ MechVerse addresses this by providing:
 The landing page greets the signed-in student and presents the four core modules as entry cards.
 
 <p align="center">
-  <img src="docs/screenshots/01-home.png" width="860" alt="Home page">
+  <img src="frontend/assets/7.png" width="860" alt="Home page">
 </p>
 
 ### 4.2 Resource Hub — Semester Dashboard
@@ -136,7 +135,7 @@ The landing page greets the signed-in student and presents the four core modules
 A semester dropdown, a streak counter, and a search bar sit above the **Continue Learning** and **Bookmarks** shortcuts. Each subject card shows its progress ring and a *Continue* action.
 
 <p align="center">
-  <img src="docs/screenshots/02-resource-hub.png" width="860" alt="Resource Hub semester dashboard">
+  <img src="frontend/assets/1.png" width="860" alt="Resource Hub semester dashboard">
 </p>
 
 ### 4.3 Resource Hub — Subject Roadmap
@@ -144,7 +143,7 @@ A semester dropdown, a streak counter, and a search bar sit above the **Continue
 Opening a subject (here, **Applied Mathematics**) reveals a colour-coded **study roadmap**: units in order, followed by PYQs and Syllabus, each with its own progress bar.
 
 <p align="center">
-  <img src="docs/screenshots/03-subject-roadmap.png" width="860" alt="Subject study roadmap">
+  <img src="frontend/assets/2.png" width="860" alt="Subject study roadmap">
 </p>
 
 ### 4.4 Grade Planner — Subject Selection
@@ -152,7 +151,7 @@ Opening a subject (here, **Applied Mathematics**) reveals a colour-coded **study
 Every subject for the chosen semester appears as a card with its current completion status.
 
 <p align="center">
-  <img src="docs/screenshots/04-grade-planner.png" width="860" alt="Grade planner subject selection">
+  <img src="frontend/assets/3.png" width="860" alt="Grade planner subject selection">
 </p>
 
 ### 4.5 Grade Planner — Predict & Plan
@@ -160,23 +159,23 @@ Every subject for the chosen semester appears as a card with its current complet
 Marks are entered through sliders or number fields. The **predicted grade** updates immediately (for example, 18/30 + 7/10 + 41/60 = **66/100 → C+**). The student then selects a target grade and chooses whether to predict the **Internals** or **End Semester** marks required.
 
 <p align="center">
-  <img src="docs/screenshots/05-grade-predictor.png" width="860" alt="Grade predictor">
+  <img src="frontend/assets/4.png" width="860" alt="Grade predictor">
 </p>
 
-### 4.5 Lab Companion
+### 4.6 Lab Companion
 
 Labs are grouped by semester (shown here for Semester 3), each opening into its lab files and viva questions.
 
 <p align="center">
-  <img src="docs/screenshots/06-lab-companion.png" width="860" alt="Lab companion">
+  <img src="frontend/assets/8.png" width="860" alt="Lab companion">
 </p>
 
-### 4.6 SGPA Calculator
+### 4.7 SGPA Calculator
 
 Subjects, marks and credits go in; letter grade and grade point are filled automatically. The **Grading Regulation** table below documents the university's marks-to-grade mapping.
 
 <p align="center">
-  <img src="docs/screenshots/07-sgpa-calculator.png" width="860" alt="SGPA calculator">
+  <img src="frontend/assets/6.png" width="860" alt="SGPA calculator">
 </p>
 
 **Grading regulation used by the calculator**
@@ -369,7 +368,7 @@ mechverse/
 │   ├── sgpa-calculator.html      SGPA Calculator
 │   ├── admin.html                Admin panel (add / edit content)
 │   ├── reset-password.html       Password reset
-│   ├── assets/                   Logo and favicon
+│   ├── assets/                   Logo, favicon and README screenshots
 │   ├── css/style.css             Global styles and design tokens
 │   └── js/
 │       ├── api.js                API client
@@ -397,9 +396,6 @@ mechverse/
 │
 ├── tools/
 │   └── list-drive-files.gs       Google Drive file-listing helper
-│
-├── docs/
-│   └── screenshots/              README images
 │
 ├── vercel.json                   Hosting, redirects and API rewrites
 ├── package.json
