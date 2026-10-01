@@ -1,8 +1,10 @@
 {
   "outputDirectory": "frontend",
   "regions": ["sin1"],
+  "redirects": [
+    { "source": "/", "destination": "/home.html", "permanent": false }
+  ],
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api" },
-    { "source": "/", "destination": "/home.html" }
+    { "source": "/api/(.*)", "destination": "/api" }
   ]
 }
