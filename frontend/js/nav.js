@@ -24,6 +24,23 @@ function renderNav(active, user) {
   ];
   if (user && user.role === 'admin') links.push(['admin.html', 'Admin', 'admin']);
 
+  // Guest preview: simple bar with brand + Sign In (same look as the landing page).
+  if (user && user.guest) {
+    root.innerHTML = `
+      <div class="topbar" id="topbarEl">
+        <a class="brand" href="home.html">
+          <span class="logo-circle" style="width:36px; height:36px; border:1px solid var(--border);"><img src="assets/logo.png" alt="MechVerse" /></span>
+          <span class="wordmark">MechVerse</span>
+        </a>
+        <a class="btn btn-primary" href="index.html">Sign In</a>
+      </div>`;
+    const bar = document.getElementById('topbarEl');
+    const sync = () => document.documentElement.style.setProperty('--topbar-h', `${bar.offsetHeight}px`);
+    sync();
+    window.addEventListener('resize', sync);
+    return;
+  }
+
   root.innerHTML = `
     <div class="topbar" id="topbarEl">
       <div class="scroll-progress" id="scrollProgress"></div>

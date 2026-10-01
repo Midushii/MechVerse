@@ -315,10 +315,30 @@
 <script src="js/back-to-top.js"></script>
 <script>
 (async () => {
-  const user = await requireSession();
-  if (!user) return;
-  renderNav('home', user);
-  document.getElementById('mvGreeting').textContent = `Hey ${user.name.split(' ')[0]} 👋`;
+  // Public landing page: don't force a redirect for guests like every other
+  // page does. Try to identify the visitor quietly; only personalize if
+  // they're already logged in. Clicking any card below still lands on a
+  // page that calls requireSession() itself, so guests still get sent to
+  // sign-in at that point -- this page is just the one exception.
+  let user = null;
+  try {
+    const res = await api('/auth/me');
+    user = res.user;
+  } catch (e) { /* not logged in -- that's fine here */ }
+
+  if (user) {
+    renderNav('home', user);
+    document.getElementById('mvGreeting').textContent = `Hey ${user.name.split(' ')[0]} 👋`;
+  } else {
+    document.getElementById('topbar-root').innerHTML = `
+      <div class="topbar" id="topbarEl">
+        <a class="brand" href="home.html">
+          <span class="logo-circle" style="width:36px; height:36px; border:1px solid var(--border);"><img src="assets/logo.png" alt="MechVerse" /></span>
+          <span class="wordmark">MechVerse</span>
+        </a>
+        <a class="btn btn-primary" href="index.html">Sign In</a>
+      </div>`;
+  }
 })();
 
 // ---- Hero: particles, mouse parallax, and card tilt ----------------------

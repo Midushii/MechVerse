@@ -1,13 +1,15 @@
 const express = require('express');
 const { body } = require('express-validator');
 const { validate } = require('../middleware/validate');
-const { requireAuth } = require('../middleware/auth');
+const { requireAuth, optionalAuth } = require('../middleware/auth');
 const ctrl = require('../controllers/gradeController');
 
 const router = express.Router();
+// Public (guest preview): course list only. Must come BEFORE requireAuth.
+router.get('/courses', optionalAuth, ctrl.listCourses);
+
 router.use(requireAuth);
 
-router.get('/courses', ctrl.listCourses);
 router.get('/courses/:courseId/historical', ctrl.historicalComparison);
 
 router.post(

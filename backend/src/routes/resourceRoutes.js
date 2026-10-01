@@ -1,15 +1,17 @@
 const express = require('express');
 const { body } = require('express-validator');
 const { validate } = require('../middleware/validate');
-const { requireAuth, requireAdmin } = require('../middleware/auth');
+const { requireAuth, requireAdmin, optionalAuth } = require('../middleware/auth');
 const upload = require('../middleware/upload');
 const ctrl = require('../controllers/resourceController');
 
 const router = express.Router();
-router.use(requireAuth); // every Resource Hub route requires login
+// Public (guest preview): subject list + type counts only. Must come BEFORE requireAuth.
+router.get('/subjects', optionalAuth, ctrl.listSubjects);
+router.get('/type-counts', optionalAuth, ctrl.typeCounts);
 
-router.get('/subjects', ctrl.listSubjects);
-router.get('/type-counts', ctrl.typeCounts);
+router.use(requireAuth); // every other Resource Hub route requires login
+
 router.get('/subjects/:subjectId', ctrl.getSubject);
 router.get('/units/:unitId', ctrl.getUnit);
 router.get('/search', ctrl.search);

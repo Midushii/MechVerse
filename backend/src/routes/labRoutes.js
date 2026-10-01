@@ -1,14 +1,16 @@
 const express = require('express');
 const { body } = require('express-validator');
 const { validate } = require('../middleware/validate');
-const { requireAuth, requireAdmin } = require('../middleware/auth');
+const { requireAuth, requireAdmin, optionalAuth } = require('../middleware/auth');
 const upload = require('../middleware/upload');
 const ctrl = require('../controllers/labController');
 
 const router = express.Router();
+// Public (guest preview): lab list only. Must come BEFORE requireAuth.
+router.get('/labs', optionalAuth, ctrl.listLabs);
+
 router.use(requireAuth);
 
-router.get('/labs', ctrl.listLabs);
 router.get('/labs/:labId', ctrl.getLab);
 
 router.get('/admin/labs', requireAdmin, ctrl.adminListLabs);

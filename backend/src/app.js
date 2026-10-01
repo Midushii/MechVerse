@@ -46,7 +46,7 @@ app.use('/api/lab-companion', labRoutes);
 app.get('/api/health', (req, res) => res.json({ ok: true }));
 
 // ---- Frontend (local use only; on Vercel the platform serves ../frontend) --
-app.use(express.static(path.join(__dirname, '..', '..', 'frontend')));
+app.use(express.static(path.join(__dirname, '..', '..', 'frontend'), { index: 'home.html' }));
 
 // ---- 404 + centralized error handler ------------------------------------
 app.use((req, res) => res.status(404).json({ error: 'Not found.' }));

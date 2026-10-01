@@ -17,6 +17,22 @@ async function requireAuth(req, res, next) {
   }
 }
 
+// For the PUBLIC list endpoints (subjects, labs, courses) shown to guests on the
+// feature pages. A valid session behaves exactly like requireAuth; with no/invalid
+// session the request continues as a read-only guest (id -1 => no progress/marks).
+async function optionalAuth(req, res, next) {
+  const token = req.cookies && req.cookies.mv_session;
+  if (token) {
+    try {
+      const payload = jwt.verify(token, process.env.JWT_SECRET);
+      const user = await db.prepare('SELECT id, name, email, role, branch, semester FROM users WHERE id = ?').get(payload.sub);
+      if (user) { req.user = user; return next(); }
+    } catch (err) { /* fall through to guest */ }
+  }
+  req.user = { id: -1, name: 'Guest', role: 'guest', semester: 1 };
+  next();
+}
+
 // Only lets admins (seniors/moderators) through. Always used after requireAuth.
 function requireAdmin(req, res, next) {
   if (!req.user || req.user.role !== 'admin') {
@@ -25,4 +41,4 @@ function requireAdmin(req, res, next) {
   next();
 }
 
-module.exports = { requireAuth, requireAdmin };
+module.exports = { requireAuth, requireAdmin, optionalAuth };
