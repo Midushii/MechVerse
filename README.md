@@ -14,7 +14,8 @@ A one-stop academic companion for Mechanical Engineering students — curated st
 
 **🌐 [mechverse-igdtuw.vercel.app](https://mechverse-igdtuw.vercel.app/)**
 
-<img src="docs/screenshots/01-home.png" width="860" alt="MechVerse home page">
+<img width="1906" height="874" alt="image" src="https://github.com/user-attachments/assets/dfacf77c-b5af-42a6-8f87-bf83a4be5901" />
+
 
 <em>The MechVerse landing page — four tools, one platform.</em>
 
