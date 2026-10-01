@@ -313,7 +313,7 @@ mechverse/
 |---|---|
 | **Midushi Maheshwari** | B.Tech. Electronics and Communication Engineering (AI), IGDTUW |
 | **Mehakpreet Kaur** | B.Tech. Electronics and Communication Engineering (AI), IGDTUW |
-| **Aditi Vaidwan** | B.Tech. Mehanical Engineering (AI), IGDTUW |
+| **Aditi Vaidwan** | B.Tech. Mehanical Engineering , IGDTUW |
 
 Contact: [midushi.maheswari@gmail.com](mailto:midushi.maheswari@gmail.com)
 
